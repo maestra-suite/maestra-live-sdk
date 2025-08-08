@@ -1,0 +1,176 @@
+/**
+ * @fileoverview Maestra SDK Web Demo Server
+ * 
+ * This Express.js server provides a WebSocket-based bridge between the web demo client
+ * and the Maestra SDK. It handles multiple audio sources (microphone, HLS, RTMP/S, RTSP, SRT)
+ * and provides real-time transcription and translation capabilities through a web interface.
+ * 
+ * The server acts as a proxy, receiving configuration and audio data from the web client
+ * and forwarding it to the Maestra transcription service through the SDK.
+ * 
+ * @example
+ * // Start the demo server
+ * node demo/server.js
+ * // Then open http://localhost:3000 in your browser
+ * 
+ * @author Maestra AI
+ * @version 1.0.0
+ */
+
+const express = require('express');
+const http = require('http');
+const WebSocket = require('ws');
+const path = require('path');
+const { v4: uuidv4 } = require('uuid');
+
+const {
+  MaestraClient,
+  FileProcessor,
+  HlsProcessor,
+  MicrophoneProcessor,
+  RtmpsProcessor,
+  RtspProcessor,
+  SrtProcessor,
+  StreamInputProcessor
+} = require('../index'); // Use the SDK from the parent directory
+
+const app = express();
+const server = http.createServer(app);
+const wss = new WebSocket.Server({ server });
+
+// Serve static files from the 'public' directory
+app.use(express.static(path.join(__dirname, 'public')));
+
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+wss.on('connection', (ws) => {
+  const connectionId = uuidv4().slice(0, 8);
+  console.log(`[${connectionId}] Client connected`);
+  let maestraClient = null;
+
+  ws.on('message', async (message) => {
+    // Robustly distinguish between command and audio messages
+    try {
+      // It's a command if it parses as JSON
+      const data = JSON.parse(message);
+      console.log(`[${connectionId}] Received command: ${data.type}`);
+
+      switch (data.type) {
+        case 'start':
+          if (maestraClient) {
+            maestraClient.stop();
+          }
+          maestraClient = new MaestraClient(data.config);
+          let processor;
+
+          const connectionTimeout = setTimeout(() => {
+            console.error(`[${connectionId}] Maestra client connection timed out after 10 seconds.`);
+            ws.send(JSON.stringify({ type: 'error', message: 'Connection to Maestra backend timed out.' }));
+            if (maestraClient) {
+              maestraClient.stop(); // Clean up the client
+              maestraClient = null;
+            }
+          }, 10000);
+
+          const clearConnectionTimeout = () => {
+            clearTimeout(connectionTimeout);
+          };
+
+          try {
+            switch (data.config.source) {
+              case 'microphone': processor = new StreamInputProcessor(); break;
+              case 'hls': processor = new HlsProcessor(data.config.url); break;
+              case 'rtmp': 
+              case 'rtmps': processor = new RtmpsProcessor(data.config.url); break;
+              case 'rtsp': processor = new RtspProcessor(data.config.url); break;
+              case 'srt': processor = new SrtProcessor(data.config.url); break;
+              default:
+                ws.send(JSON.stringify({ type: 'error', message: `Invalid source type: ${data.config.source}` }));
+                return;
+            }
+
+            maestraClient.on('interim-transcription', (segments) => {
+              ws.send(JSON.stringify({ type: 'interim-transcription', data: segments }));
+            });
+            maestraClient.on('finalized-transcription', (segment) => {
+              ws.send(JSON.stringify({ type: 'finalized-transcription', data: segment }));
+            });
+            maestraClient.on('interim-translation', (segments) => {
+              ws.send(JSON.stringify({ type: 'interim-translation', data: segments }));
+            });
+            maestraClient.on('finalized-translation', (segment) => {
+              ws.send(JSON.stringify({ type: 'finalized-translation', data: segment }));
+            });
+
+            
+            maestraClient.on('language-detected', (language) => ws.send(JSON.stringify({ type: 'language-detected', data: language })));
+            maestraClient.on('error', (error) => {
+              clearConnectionTimeout();
+              console.error(`[${connectionId}] Maestra client error:`, error);
+              ws.send(JSON.stringify({ type: 'error', message: error.message || 'Unknown error' }));
+            });
+            maestraClient.on('disconnect', (reason) => {
+              clearConnectionTimeout();
+              console.log(`[${connectionId}] Maestra client disconnected:`, reason);
+              ws.send(JSON.stringify({ type: 'status', message: `Disconnected from Maestra: ${reason}` }));
+            });
+            
+            maestraClient.on('ready', () => {
+              clearConnectionTimeout();
+              console.log(`[${connectionId}] Maestra client is ready.`);
+              console.log(`[${connectionId}] Config: ${JSON.stringify(data.config)}`);
+              ws.send(JSON.stringify({ type: 'status', message: 'Connected to Maestra, starting transcription.' }));
+              maestraClient.transcribe(processor);
+              ws.send(JSON.stringify({ type: 'server-ready' }));
+            });
+            
+            console.log(`[${connectionId}] Connecting to Maestra...`);
+            maestraClient.connect();
+
+          } catch (error) {
+            clearConnectionTimeout();
+            console.error(`[${connectionId}] Failed to start transcription:`, error);
+            ws.send(JSON.stringify({ type: 'error', message: `Failed to initialize processor: ${error.message}` }));
+          }
+          break;
+
+        case 'stop':
+          console.log(`[${connectionId}] Received stop message`);
+          if (maestraClient) {
+            maestraClient.stop();
+            maestraClient = null;
+          }
+          ws.send(JSON.stringify({ type: 'status', message: 'Transcription stopped.' }));
+          break;
+      }
+    } catch (e) {
+      // If JSON.parse fails, it must be a binary audio packet
+      if (message instanceof Buffer) {
+        console.log(`[${connectionId}] Received audio buffer: ${message.length} bytes`);
+        if (maestraClient && maestraClient.streamProcessor instanceof StreamInputProcessor) {
+          maestraClient.streamProcessor.pushAudio(message);
+          console.log(`[${connectionId}] Forwarded audio to processor`);
+        } else {
+          console.warn(`[${connectionId}] No processor available for audio`);
+        }
+      } else {
+        console.warn(`[${connectionId}] Received unparseable message:`, message);
+      }
+    }
+  });
+
+  ws.on('close', () => {
+    console.log(`[${connectionId}] Client disconnected`);
+    if (maestraClient) {
+      maestraClient.stop();
+      maestraClient = null;
+    }
+  });
+});
+
+const port = 3000;
+server.listen(port, () => {
+  console.log(`Server is listening on http://localhost:${port}`);
+});

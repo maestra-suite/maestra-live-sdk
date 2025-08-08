@@ -1,0 +1,28 @@
+{
+  "source": {
+    "include": [
+      "index.js",
+      "lib/maestra-client.js",
+      "lib/audio-processors",
+      "lib/websocket-client.js",
+      "examples",
+      "demo/server.js",
+      "demo/public/client.js"
+    ],
+    "includePattern": ".+\\.js(doc|x)?$",
+    "excludePattern": "(^|\\/|\\\\)_"
+  },
+  "opts": {
+    "destination": "./docs/",
+    "recurse": true,
+    "readme": "./README.md"
+  },
+  "plugins": ["plugins/markdown"],
+  "templates": {
+    "cleverLinks": false,
+    "monospaceLinks": false
+  },
+  "metadata": {
+    "title": "Maestra Live SDK Documentation"
+  }
+} 

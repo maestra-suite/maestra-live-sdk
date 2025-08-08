@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Home</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Home</h1>
+
+    
+
+
+
+    
+
+
+    <h3> </h3>
+
+
+
+
+
+
+
+
+
+
+    
+
+
+
+
+    <section>
+        <article><h1>Maestra Live SDK</h1>
+<p>A Node.js live SDK for connecting to Maestra's real-time transcription and translation services.</p>
+<h2>Installation</h2>
+<pre class="prettyprint source lang-bash"><code>npm install @maestra-ai/live-sdk
+</code></pre>
+<h2>📦 What's Included</h2>
+<p><strong>In the npm package:</strong></p>
+<ul>
+<li>Core SDK library (<code>lib/</code> folder)</li>
+<li>README and license files</li>
+<li>TypeScript definitions</li>
+</ul>
+<p><strong>Available separately from Maestra:</strong></p>
+<ul>
+<li><strong>Web Demo</strong> - Production-ready web interface with modern UI</li>
+<li><strong>CLI Examples</strong> - Command-line usage examples and scripts</li>
+<li><strong>Complete Documentation</strong> - Comprehensive guides and tutorials</li>
+</ul>
+<blockquote>
+<p>The npm package contains only the essential SDK files to keep it lightweight. Demos and examples are available for download from Maestra.</p>
+</blockquote>
+<h2>Quick Start: Transcribing from the Microphone</h2>
+<p>This example shows how to connect to the Maestra server and transcribe audio from your computer's microphone.</p>
+<pre class="prettyprint source lang-javascript"><code>const { MaestraClient, MicrophoneProcessor } = require('@maestra-ai/live-sdk');
+
+// Configuration
+const clientConfig = {
+  apiKey: 'YOUR_API_KEY', // Replace with your actual API key
+  host: 'wlive2.maestra.ai',
+  port: 443,
+  secure: true,
+  sourceLanguage: 'en',       // Optional: Source language ('en', 'fr', 'es', 'auto', etc.)
+  targetLanguage: 'fr',       // Optional: Target language for translation (automatically enables translation)
+  saveToDashboard: true       // Optional: Save transcription to dashboard
+};
+
+// 1. Create a Maestra Client
+const maestraClient = new MaestraClient(clientConfig);
+
+// 2. Set up event listeners
+maestraClient.on('ready', () => {
+  console.log('✅ Client is ready. Starting microphone transcription...');
+  try {
+    const processor = new MicrophoneProcessor();
+    maestraClient.transcribe(processor);
+  } catch (error) {
+    console.error('❌ Failed to start transcription:', error);
+  }
+});
+
+maestraClient.on('interim-transcription', (segments) => {
+  if (segments && Array.isArray(segments) && segments.length > 0) {
+    const text = segments.map(s => s.text).join(' ');
+    process.stdout.write(`\r👂 INTERIM: ${text}`);
+  }
+});
+
+maestraClient.on('finalized-transcription', (segment) => {
+  process.stdout.clearLine(0);
+  process.stdout.cursorTo(0);
+  console.log(`✅ FINAL: ${segment.text} [${segment.start}s -> ${segment.end}s]`);
+});
+
+maestraClient.on('interim-translation', (segments) => {
+  if (segments && Array.isArray(segments) && segments.length > 0) {
+    const text = segments.map(s => s.text).join(' ');
+    process.stdout.write(`\r🌐 TRANSLATION: ${text}`);
+  }
+});
+
+maestraClient.on('finalized-translation', (segment) => {
+  if (segment && segment.text) {
+    process.stdout.clearLine(0);
+    process.stdout.cursorTo(0);
+    console.log(`✅ TRANSLATED: ${segment.text} [${segment.start}s -> ${segment.end}s]`);
+  }
+});
+
+maestraClient.on('error', (error) => {
+  console.error('\\n❌ An error occurred:', error.message);
+});
+
+maestraClient.on('disconnect', () => {
+  console.log('\\n🔌 Client disconnected.');
+});
+
+// 3. Connect to the server
+maestraClient.connect();
+
+// To stop transcription, use Ctrl+C or call maestraClient.stop()
+// Example: Stop after 30 seconds
+// setTimeout(() => {
+//   console.log('Stopping transcription...');
+//   maestraClient.stop();
+//   process.exit(0);
+// }, 30000);
+</code></pre>
+<h2>Stream Examples</h2>
+<h3>File Transcription</h3>
+<p>Process local audio or video files:</p>
+<pre class="prettyprint source lang-javascript"><code>const { MaestraClient, FileProcessor } = require('@maestra-ai/live-sdk');
+
+const clientConfig = {
+  apiKey: 'YOUR_API_KEY',
+  sourceLanguage: 'en',
+  targetLanguage: 'fr',
+  saveToDashboard: true
+};
+
+const maestraClient = new MaestraClient(clientConfig);
+
+maestraClient.on('ready', () => {
+  console.log('✅ Starting file transcription...');
+  const processor = new FileProcessor('./path/to/audio.wav');
+  maestraClient.transcribe(processor);
+});
+
+// ... same event listeners as above
+maestraClient.connect();
+</code></pre>
+<h3>HLS Stream Transcription</h3>
+<p>Transcribe HTTP Live Streaming (HLS) sources:</p>
+<pre class="prettyprint source lang-javascript"><code>const { MaestraClient, HlsProcessor } = require('@maestra-ai/live-sdk');
+
+const clientConfig = {
+  apiKey: 'YOUR_API_KEY',
+  sourceLanguage: 'auto',  // Auto-detect language
+  targetLanguage: 'en'     // Translation automatically enabled when targetLanguage is specified
+};
+
+const maestraClient = new MaestraClient(clientConfig);
+
+maestraClient.on('ready', () => {
+  console.log('✅ Starting HLS stream transcription...');
+  const processor = new HlsProcessor('https://example.com/stream.m3u8');
+  maestraClient.transcribe(processor);
+});
+
+// ... event listeners
+maestraClient.connect();
+</code></pre>
+<h3>RTSP Stream Transcription</h3>
+<p>Transcribe Real-Time Streaming Protocol (RTSP) sources:</p>
+<pre class="prettyprint source lang-javascript"><code>const { MaestraClient, RtspProcessor } = require('@maestra-ai/live-sdk');
+
+const clientConfig = {
+  apiKey: 'YOUR_API_KEY',
+  sourceLanguage: 'es',
+  targetLanguage: 'en',
+  saveToDashboard: true
+};
+
+const maestraClient = new MaestraClient(clientConfig);
+
+maestraClient.on('ready', () => {
+  console.log('✅ Starting RTSP stream transcription...');
+  const processor = new RtspProcessor('rtsp://example.com:554/stream');
+  maestraClient.transcribe(processor);
+});
+
+// ... event listeners
+maestraClient.connect();
+</code></pre>
+<h3>RTMP/RTMPS Stream Transcription</h3>
+<p>Transcribe Real-Time Messaging Protocol streams:</p>
+<pre class="prettyprint source lang-javascript"><code>const { MaestraClient, RtmpsProcessor } = require('@maestra-ai/live-sdk');
+
+const clientConfig = {
+  apiKey: 'YOUR_API_KEY',
+  sourceLanguage: 'auto',
+  targetLanguage: 'fr'
+};
+
+const maestraClient = new MaestraClient(clientConfig);
+
+maestraClient.on('ready', () => {
+  console.log('✅ Starting RTMP stream transcription...');
+  const processor = new RtmpsProcessor('rtmp://example.com:1935/live/stream');
+  maestraClient.transcribe(processor);
+});
+
+// ... event listeners
+maestraClient.connect();
+</code></pre>
+<h3>SRT Stream Transcription</h3>
+<p>Transcribe Secure Reliable Transport (SRT) streams:</p>
+<pre class="prettyprint source lang-javascript"><code>const { MaestraClient, SrtProcessor } = require('@maestra-ai/live-sdk');
+
+const clientConfig = {
+  apiKey: 'YOUR_API_KEY',
+  sourceLanguage: 'ja',
+  targetLanguage: 'en',
+  saveToDashboard: true
+};
+
+const maestraClient = new MaestraClient(clientConfig);
+
+maestraClient.on('ready', () => {
+  console.log('✅ Starting SRT stream transcription...');
+  const processor = new SrtProcessor('srt://example.com:9999?mode=caller');
+  maestraClient.transcribe(processor);
+});
+
+// ... event listeners
+maestraClient.connect();
+</code></pre>
+<h3>vMix Integration</h3>
+<p>Integrate real-time captions with vMix for live video production:</p>
+<pre class="prettyprint source lang-javascript"><code>const { MaestraClient, MicrophoneProcessor, VmixProcessor } = require('@maestra-ai/live-sdk');
+
+// Configuration
+const clientConfig = {
+  apiKey: 'YOUR_API_KEY',
+  sourceLanguage: 'en',        // Source language for transcription
+  targetLanguage: 'fr'         // Optional: Target language for translation
+};
+
+const vmixAddress = 'http://127.0.0.1:8088'; // vMix Web Controller URL
+
+// 1. Initialize MaestraClient
+const maestraClient = new MaestraClient(clientConfig);
+
+// 2. Initialize Audio Processor (microphone or other source)
+const audioProcessor = new MicrophoneProcessor();
+
+// 3. Initialize VmixProcessor
+const vmixProcessor = new VmixProcessor({
+  vmixAddress: vmixAddress,
+  useInterim: true,           // Set to true for faster, &quot;flickering&quot; captions
+  useTranslation: false       // Set to true to send translations instead of transcriptions
+});
+
+// Initialize vMix connection
+maestraClient.on('ready', async () => {
+  console.log('✅ MaestraClient is connected and ready.');
+  
+  try {
+    // Initialize the connection to vMix and auto-discover the input
+    console.log('Initializing vMix connection...');
+    await vmixProcessor.initialize();
+    
+    // Attach the VmixProcessor to the client
+    vmixProcessor.attach(maestraClient);
+    console.log('VmixProcessor attached. Starting transcription...');
+    
+    // Start transcribing
+    maestraClient.transcribe(audioProcessor);
+  } catch (error) {
+    console.error(`❌ Failed to initialize vMix Processor: ${error.message}`);
+  }
+});
+
+// Event handlers
+maestraClient.on('transcription-started', () => {
+  console.log('Transcription has started. Listening for audio...');
+});
+
+maestraClient.on('finalized-transcription', (segment) => {
+  console.log('Finalized:', segment.text);
+});
+
+maestraClient.on('interim-transcription', (segment) => {
+  if (segment.text) {
+    console.log('Interim:', segment.text);
+  }
+});
+
+maestraClient.on('finalized-translation', (segment) => {
+  console.log('Translated:', segment.text);
+});
+
+maestraClient.on('interim-translation', (segment) => {
+  if (segment.text) {
+    console.log('Translating:', segment.text);
+  }
+});
+
+// Error handling
+vmixProcessor.on('error', (error) => {
+  console.error('VmixProcessor Error:', error.message);
+  maestraClient.stop();
+});
+
+maestraClient.on('error', (error) => {
+  console.error('MaestraClient Error:', error);
+  vmixProcessor.detach();
+});
+
+maestraClient.on('disconnect', () => {
+  console.log('MaestraClient disconnected.');
+  vmixProcessor.detach();
+});
+
+// Connect to the server
+maestraClient.connect();
+
+// Graceful shutdown
+process.on('SIGINT', () => {
+  console.log('\nShutting down...');
+  maestraClient.stop();
+  vmixProcessor.detach();
+  process.exit(0);
+});
+</code></pre>
+<p><strong>vMix Configuration:</strong></p>
+<ul>
+<li>Ensure vMix Web Controller is enabled in vMix settings</li>
+<li>The vMix URL typically uses port 8088 (e.g., <code>http://127.0.0.1:8088</code>)</li>
+<li>VmixProcessor will auto-discover the appropriate text input in vMix</li>
+<li>Use <code>useInterim: true</code> for faster caption updates with some flickering</li>
+<li>Use <code>useInterim: false</code> for more stable captions with slight delay</li>
+</ul>
+<h2>Language Configuration</h2>
+<p>The SDK supports both transcription and real-time translation with flexible language configuration:</p>
+<h3>Source Language Options</h3>
+<pre class="prettyprint source lang-javascript"><code>const client = new MaestraClient({
+  apiKey: 'YOUR_API_KEY',
+  sourceLanguage: 'en',     // Specific language code
+  // sourceLanguage: 'auto', // Auto-detect language
+  // sourceLanguage: null,   // Use server/user default settings
+});
+</code></pre>
+<p><strong>Language Codes:</strong> <code>en</code> (English), <code>es</code> (Spanish), <code>fr</code> (French), <code>de</code> (German), <code>it</code> (Italian), <code>pt</code> (Portuguese), <code>ru</code> (Russian), <code>ja</code> (Japanese), <code>ko</code> (Korean), <code>zh</code> (Chinese), <code>ar</code> (Arabic), <code>hi</code> (Hindi), <code>tr</code> (Turkish), <code>nl</code> (Dutch), <code>pl</code> (Polish), <code>af</code> (Afrikaans), <code>sq</code> (Albanian), <code>am</code> (Amharic), <code>hy</code> (Armenian), <code>az</code> (Azerbaijani), <code>eu</code> (Basque), <code>be</code> (Belarusian), <code>bn</code> (Bengali), <code>bs</code> (Bosnian), <code>bg</code> (Bulgarian), <code>ca</code> (Catalan), <code>hr</code> (Croatian), <code>cs</code> (Czech), <code>da</code> (Danish), <code>et</code> (Estonian), <code>fi</code> (Finnish), <code>gl</code> (Galician), <code>ka</code> (Georgian), <code>el</code> (Greek), <code>gu</code> (Gujarati), <code>he</code> (Hebrew), <code>hu</code> (Hungarian), <code>is</code> (Icelandic), <code>id</code> (Indonesian), <code>jv</code> (Javanese), <code>kn</code> (Kannada), <code>kk</code> (Kazakh), <code>km</code> (Khmer), <code>lo</code> (Lao), <code>la</code> (Latin), <code>lv</code> (Latvian), <code>lt</code> (Lithuanian), <code>mk</code> (Macedonian), <code>ms</code> (Malay), <code>ml</code> (Malayalam), <code>mt</code> (Maltese), <code>mr</code> (Marathi), <code>mn</code> (Mongolian), <code>ne</code> (Nepali), <code>no</code> (Norwegian), <code>fa</code> (Persian), <code>pa</code> (Punjabi), <code>ro</code> (Romanian), <code>sa</code> (Sanskrit), <code>sr</code> (Serbian), <code>si</code> (Sinhala), <code>sk</code> (Slovak), <code>sl</code> (Slovenian), <code>so</code> (Somali), <code>sw</code> (Swahili), <code>sv</code> (Swedish), <code>tl</code> (Tagalog), <code>ta</code> (Tamil), <code>te</code> (Telugu), <code>th</code> (Thai), <code>uk</code> (Ukrainian), <code>ur</code> (Urdu), <code>vi</code> (Vietnamese), <code>cy</code> (Welsh), <code>yo</code> (Yoruba)</p>
+<h3>Translation Configuration</h3>
+<pre class="prettyprint source lang-javascript"><code>const client = new MaestraClient({
+  apiKey: 'YOUR_API_KEY',
+  sourceLanguage: 'en',         // What language is being spoken
+  targetLanguage: 'fr',         // Translate to French (automatically enables translation)
+  saveToDashboard: true        // Save session to dashboard
+});
+
+// ⚠️ IMPORTANT: When targetLanguage is specified, handle BOTH transcription AND translation events
+// Listen for translation events with proper null checks
+client.on('interim-translation', (segments) => {
+  if (segments && Array.isArray(segments) && segments.length > 0) {
+    const text = segments.map(s => s.text).join(' ');
+    console.log(`🌐 Translating: ${text}`);
+  }
+});
+
+client.on('finalized-translation', (segment) => {
+  if (segment && segment.text) {
+    console.log(`✅ Translated: ${segment.text} [${segment.start}s -> ${segment.end}s]`);
+  }
+});
+</code></pre>
+<h3>Best Practices</h3>
+<h4>Always Use Null Checks for Event Handlers</h4>
+<p>To prevent <code>Cannot read properties of undefined (reading 'map')</code> errors, always validate data before processing:</p>
+<pre class="prettyprint source lang-javascript"><code>// ✅ GOOD - With null checks
+client.on('interim-transcription', (segments) => {
+  if (segments && Array.isArray(segments) && segments.length > 0) {
+    const text = segments.map(s => s.text).join(' ');
+    console.log(text);
+  }
+});
+
+// ❌ BAD - No null checks (can crash)
+client.on('interim-transcription', (segments) => {
+  const text = segments.map(s => s.text).join(' '); // Error if segments is undefined!
+  console.log(text);
+});
+</code></pre>
+<h4>Complete Event Handler Setup for Translation</h4>
+<p>When using <code>targetLanguage</code>, set up all four event handlers:</p>
+<pre class="prettyprint source lang-javascript"><code>const client = new MaestraClient({
+  targetLanguage: 'fr'  // Translation automatically enabled when targetLanguage is specified
+});
+
+// Handle transcription events
+client.on('interim-transcription', (segments) => { /* ... */ });
+client.on('finalized-transcription', (segment) => { /* ... */ });
+
+// Handle translation events (required when targetLanguage is specified)
+client.on('interim-translation', (segments) => { /* ... */ });
+client.on('finalized-translation', (segment) => { /* ... */ });
+</code></pre>
+<h3>Backward Compatibility</h3>
+<p>The SDK maintains backward compatibility with the legacy <code>language</code> parameter:</p>
+<pre class="prettyprint source lang-javascript"><code>// ✅ New way (recommended)
+const client = new MaestraClient({
+  sourceLanguage: 'en',
+  targetLanguage: 'fr'
+});
+
+// ✅ Legacy way (still works)
+const client = new MaestraClient({
+  language: 'en',           // Will be treated as sourceLanguage
+  targetLanguage: 'fr'
+});
+</code></pre>
+<h2>API Overview</h2>
+<h3><code>MaestraClient</code></h3>
+<p>The main client for interacting with the Maestra API.</p>
+<p><strong>Constructor Options:</strong></p>
+<ul>
+<li><code>apiKey</code> (string): Maestra API key (required)</li>
+<li><code>host</code> (string): Server hostname (default: 'wlive2.maestra.ai')</li>
+<li><code>port</code> (number): Server port (default: 443)</li>
+<li><code>secure</code> (boolean): Use WSS connection (default: true)</li>
+<li><code>sourceLanguage</code> (string): Source language code or 'auto' for detection</li>
+<li><code>targetLanguage</code> (string): Target language for translation (automatically enables translation when specified)</li>
+<li><code>saveToDashboard</code> (boolean): Save transcription to dashboard after session</li>
+<li><code>useVad</code> (boolean): Use voice activity detection (default: true)</li>
+</ul>
+<p><strong>Events:</strong></p>
+<ul>
+<li><code>ready</code>: Fired when the client is connected and ready to transcribe.</li>
+<li><code>interim-transcription</code>: Provides in-progress transcription results.</li>
+<li><code>finalized-transcription</code>: Provides finalized transcription segments.</li>
+<li><code>interim-translation</code>: Provides in-progress translation results.</li>
+<li><code>finalized-translation</code>: Provides finalized translation segments.</li>
+<li><code>language-detected</code>: Fired when source language is auto-detected.</li>
+<li><code>error</code>: Fired when an error occurs.</li>
+<li><code>disconnect</code>: Fired when the client disconnects from the server.</li>
+</ul>
+<h3>Audio Processors</h3>
+<p>This SDK includes several processors for handling different audio sources:</p>
+<ul>
+<li><code>MicrophoneProcessor</code>: For real-time audio from a microphone.</li>
+<li><code>FileProcessor</code>: For transcribing local audio/video files.</li>
+<li><code>HlsProcessor</code>: For HLS (HTTP Live Streaming) sources.</li>
+<li><code>RtmpsProcessor</code>: For RTMP/RTMPS (Real-Time Messaging Protocol) sources.</li>
+<li><code>RtspProcessor</code>: For RTSP (Real-Time Streaming Protocol) sources.</li>
+<li><code>SrtProcessor</code>: For SRT (Secure Reliable Transport) sources.</li>
+<li><code>VmixProcessor</code>: For sending live captions to vMix.</li>
+</ul>
+<h2>CLI Examples</h2>
+<p>Command-line examples are available from Maestra for quick testing and integration:</p>
+<blockquote>
+<p><strong>Note</strong>: CLI examples are not included in the npm package but are available as separate downloads from Maestra.</p>
+</blockquote>
+<pre class="prettyprint source lang-bash"><code># Download CLI examples from Maestra
+# Extract to your preferred location
+cd maestra-client-sdk/examples
+
+# Install dependencies
+npm install
+
+# Run CLI examples (transcription only)
+node run_maestra_client.js --apiKey YOUR_API_KEY
+
+# File transcription  
+node run_maestra_client.js --apiKey YOUR_API_KEY --file path/to/audio.wav
+
+# Stream transcription
+node run_maestra_client.js --apiKey YOUR_API_KEY --hls_url http://example.com/stream.m3u8
+
+# With language configuration (transcription only)
+node run_maestra_client.js --apiKey YOUR_API_KEY --sourceLanguage en
+
+# Enable translation from English to French (translation automatically enabled)
+node run_maestra_client.js --apiKey YOUR_API_KEY --sourceLanguage en --targetLanguage fr
+
+# Auto-detect source language and translate to Spanish (translation automatically enabled)
+node run_maestra_client.js --apiKey YOUR_API_KEY --sourceLanguage auto --targetLanguage es
+
+# Transcribe French audio and save to dashboard (no translation)
+node run_maestra_client.js --apiKey YOUR_API_KEY --sourceLanguage fr --saveToDashboard true
+
+# Enable translation with all features (translation automatically enabled)
+node run_maestra_client.js --apiKey YOUR_API_KEY --sourceLanguage auto --targetLanguage es --saveToDashboard
+</code></pre>
+<p>For complete CLI documentation and usage instructions, contact Maestra for the examples package.</p></article>
+    </section>
+
+
+
+
+
+
+
+
+
+<section>
+
+<header>
+    
+        <h2>demo/public/client.js</h2>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+            <div class="description"><p>Maestra Web Client</p>
+<p>This client-side JavaScript provides the web interface for Maestra.
+It handles WebSocket communication with the server, manages audio capture
+from the microphone, and displays real-time transcription and translation results.</p>
+<p>Features:</p>
+<ul>
+<li>Multiple audio source support (microphone, HLS, RTMP/S, RTSP, SRT)</li>
+<li>Real-time audio processing with Web Audio API</li>
+<li>WebSocket communication for transcription results</li>
+<li>Dynamic language detection and display</li>
+<li>Optional real-time translation</li>
+<li>Modern dark theme UI with split-screen layout</li>
+</ul></div>
+        
+
+        
+
+
+<dl class="details">
+
+    
+    <dt class="tag-version">Version:</dt>
+    <dd class="tag-version"><ul class="dummy"><li>2.0.0</li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-author">Author:</dt>
+    <dd class="tag-author">
+        <ul>
+            <li>Maestra AI</li>
+        </ul>
+    </dd>
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="demo_public_client.js.html">demo/public/client.js</a>, <a href="demo_public_client.js.html#line1">line 1</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+        
+    
+    </div>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+
+
+
+<section>
+
+<header>
+    
+        <h2>demo/server.js</h2>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+            <div class="description"><p>Maestra SDK Web Demo Server</p>
+<p>This Express.js server provides a WebSocket-based bridge between the web demo client
+and the Maestra SDK. It handles multiple audio sources (microphone, HLS, RTMP/S, RTSP, SRT)
+and provides real-time transcription and translation capabilities through a web interface.</p>
+<p>The server acts as a proxy, receiving configuration and audio data from the web client
+and forwarding it to the Maestra transcription service through the SDK.</p></div>
+        
+
+        
+
+
+<dl class="details">
+
+    
+    <dt class="tag-version">Version:</dt>
+    <dd class="tag-version"><ul class="dummy"><li>1.0.0</li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-author">Author:</dt>
+    <dd class="tag-author">
+        <ul>
+            <li>Maestra AI</li>
+        </ul>
+    </dd>
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="demo_server.js.html">demo/server.js</a>, <a href="demo_server.js.html#line1">line 1</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+        
+            <h3>Example</h3>
+            
+    <pre class="prettyprint"><code>// Start the demo servernode demo/server.js// Then open http://localhost:3000 in your browser</code></pre>
+
+        
+    
+    </div>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+
+
+
+<section>
+
+<header>
+    
+        <h2>examples/run_maestra_client.js</h2>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+            <div class="description"><p>Maestra CLI - Command-line interface for the Maestra Client SDK</p>
+<p>This CLI tool provides a comprehensive interface for real-time transcription and translation
+using the Maestra Client SDK. It supports multiple audio sources including microphone,
+local files, and various streaming protocols (HLS, RTMP/S, RTSP, SRT).</p></div>
+        
+
+        
+
+
+<dl class="details">
+
+    
+    <dt class="tag-version">Version:</dt>
+    <dd class="tag-version"><ul class="dummy"><li>1.0.0</li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-author">Author:</dt>
+    <dd class="tag-author">
+        <ul>
+            <li>Maestra AI</li>
+        </ul>
+    </dd>
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="examples_run_maestra_client.js.html">examples/run_maestra_client.js</a>, <a href="examples_run_maestra_client.js.html#line3">line 3</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+        
+            <h3>Examples</h3>
+            
+    <pre class="prettyprint"><code>// Microphone transcriptionmaestra-cli --apikey YOUR_API_KEY</code></pre>
+
+    <pre class="prettyprint"><code>// File transcriptionmaestra-cli --apikey YOUR_API_KEY --file audio.wav</code></pre>
+
+    <pre class="prettyprint"><code>// Stream transcriptionmaestra-cli --apikey YOUR_API_KEY --hls_url http://example.com/stream.m3u8</code></pre>
+
+        
+    
+    </div>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+
+
+
+<section>
+
+<header>
+    
+        <h2>lib/websocket-client.js</h2>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+            <div class="description"><p>WebSocket client for Maestra transcription services</p>
+<p>This module provides a WebSocket client that handles real-time communication
+with Maestra's transcription servers. It manages connection lifecycle,
+message handling, and event emission for transcription results.</p></div>
+        
+
+        
+
+
+<dl class="details">
+
+    
+    <dt class="tag-version">Version:</dt>
+    <dd class="tag-version"><ul class="dummy"><li>1.0.0</li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-author">Author:</dt>
+    <dd class="tag-author">
+        <ul>
+            <li>Maestra AI</li>
+        </ul>
+    </dd>
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="lib_websocket-client.js.html">lib/websocket-client.js</a>, <a href="lib_websocket-client.js.html#line1">line 1</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+        
+    
+    </div>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="FfmpegProcessor.html">FfmpegProcessor</a></li><li><a href="FileProcessor.html">FileProcessor</a></li><li><a href="HlsProcessor.html">HlsProcessor</a></li><li><a href="MaestraClient.html">MaestraClient</a></li><li><a href="MicrophoneProcessor.html">MicrophoneProcessor</a></li><li><a href="RtmpsProcessor.html">RtmpsProcessor</a></li><li><a href="RtspProcessor.html">RtspProcessor</a></li><li><a href="SrtProcessor.html">SrtProcessor</a></li><li><a href="StreamInputProcessor.html">StreamInputProcessor</a></li><li><a href="WebSocketClient.html">WebSocketClient</a></li></ul><h3>Global</h3><ul><li><a href="global.html#main">main</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Fri Aug 08 2025 13:17:01 GMT+0300 (GMT+03:00)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
