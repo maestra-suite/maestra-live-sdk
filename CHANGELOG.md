@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.1] - 2025-09-05
+### Added
+- **Voice Over Feature**: Added voice over feature for development of web applications.
+
 ## [0.1.0] - 2025-08-08
 ### Republished as a new package
 - **Maestra Live SDK**: Name changed
