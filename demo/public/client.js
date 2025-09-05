@@ -32,11 +32,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const translationDiv = document.getElementById('translation');
     const apiKeyInput = document.getElementById('authToken');
     const enableTranslationCheckbox = document.getElementById('enableTranslation');
+    const enableVoiceOverCheckbox = document.getElementById('enableVoiceOver');
     const showInterimResultsCheckbox = document.getElementById('showInterimResults');
     const saveToDashboardCheckbox = document.getElementById('saveToDashboard');
     const sourceLanguageSelect = document.getElementById('sourceLanguage');
     const targetLanguageSelect = document.getElementById('targetLanguage');
     const targetLanguageGroup = document.getElementById('targetLanguageGroup');
+    const voiceOverGroup = document.getElementById('voiceOverGroup');
     
     // New UI Elements
     const setupPanel = document.getElementById('setupPanel');
@@ -66,6 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let mediaStream;
     let detectedLanguage = null;
     let translationEnabled = false;
+    let voiceOverEnabled = false;
     let showInterimResults = true;
     let saveToDashboard = false;
     let currentActiveTab = 'microphone';
@@ -107,9 +110,35 @@ document.addEventListener('DOMContentLoaded', () => {
     enableTranslationCheckbox.addEventListener('change', () => {
         translationEnabled = enableTranslationCheckbox.checked;
         targetLanguageGroup.style.display = translationEnabled ? 'block' : 'none';
+        voiceOverGroup.style.display = translationEnabled ? 'block' : 'none';
+        
+        // If translation is disabled, also disable voiceover
+        if (!translationEnabled) {
+            enableVoiceOverCheckbox.checked = false;
+            voiceOverEnabled = false;
+        }
         
         if (isTranscribing) {
             updateTranscriptionUI();
+        }
+    });
+
+    /**
+     * Handle voiceover checkbox change
+     */
+    enableVoiceOverCheckbox.addEventListener('change', () => {
+        voiceOverEnabled = enableVoiceOverCheckbox.checked;
+        
+        // Voiceover requires translation
+        if (voiceOverEnabled && !translationEnabled) {
+            enableTranslationCheckbox.checked = true;
+            translationEnabled = true;
+            targetLanguageGroup.style.display = 'block';
+            logStatus('Translation automatically enabled for voiceover.');
+        }
+        
+        if (isTranscribing) {
+            logStatus('Voiceover setting changed. Please restart to apply changes.');
         }
     });
     
@@ -280,6 +309,7 @@ document.addEventListener('DOMContentLoaded', () => {
             logStatus('Connecting...');
             
             translationEnabled = enableTranslationCheckbox.checked;
+            voiceOverEnabled = enableVoiceOverCheckbox.checked;
             saveToDashboard = saveToDashboardCheckbox.checked;
             
             let config = {
@@ -289,6 +319,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 secure: true,
                 source: currentActiveTab,
                 translationEnabled: translationEnabled,
+                voiceOverEnabled: voiceOverEnabled,
                 saveToDashboard: saveToDashboard
             };
             
@@ -364,6 +395,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 case 'finalized-translation':
                     if (translationEnabled && message.data && message.data.text) {
                         appendToTranslation(message.data.text);
+                    }
+                    break;
+                    
+                case 'finalized-segment-audio-url':
+                    if (voiceOverEnabled && message.data) {
+                        playVoiceoverAudio(message.data);
                     }
                     break;
                     
@@ -889,6 +926,57 @@ document.addEventListener('DOMContentLoaded', () => {
             translationDiv.appendChild(newLine);
         }
         translationDiv.scrollTop = translationDiv.scrollHeight;
+    }
+
+    /**
+     * Play voiceover audio from URL
+     * @param {string} audioUrl - The URL of the audio to play
+     */
+    function playVoiceoverAudio(audioUrl) {
+        try {
+            const audio = new Audio(audioUrl);
+            audio.crossOrigin = 'anonymous';
+            
+            audio.addEventListener('play', () => {
+                console.log('🎵 Voiceover audio started playing');
+                logStatus('🎵 Playing voiceover audio');
+            });
+            
+            audio.addEventListener('ended', () => {
+                console.log('⏹️ Voiceover audio ended');
+            });
+            
+            audio.addEventListener('error', (event) => {
+                console.error('❌ Voiceover audio error:', event);
+                logStatus('❌ Voiceover audio failed to play', true);
+            });
+            
+            // Attempt to play
+            audio.play().catch(error => {
+                if (error.name === 'NotAllowedError') {
+                    console.warn('🚫 Voiceover autoplay blocked');
+                    logStatus('🚫 Voiceover autoplay blocked - click anywhere to enable', true);
+                    
+                    // Add click handler to enable audio
+                    const enableAudio = () => {
+                        audio.play()
+                            .then(() => {
+                                logStatus('🎵 Voiceover audio enabled');
+                                document.removeEventListener('click', enableAudio);
+                            })
+                            .catch(err => console.error('Failed to play after user interaction:', err));
+                    };
+                    document.addEventListener('click', enableAudio, { once: true });
+                } else {
+                    console.error('Voiceover playback error:', error);
+                    logStatus('❌ Voiceover playback failed', true);
+                }
+            });
+            
+        } catch (error) {
+            console.error('Error creating voiceover audio:', error);
+            logStatus('❌ Voiceover error', true);
+        }
     }
 
     // --- Event Listeners ---

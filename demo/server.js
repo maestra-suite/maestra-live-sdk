@@ -103,6 +103,10 @@ wss.on('connection', (ws) => {
             maestraClient.on('finalized-translation', (segment) => {
               ws.send(JSON.stringify({ type: 'finalized-translation', data: segment }));
             });
+            
+            maestraClient.on('finalized-segment-audio-url', (audioUrl) => {
+              ws.send(JSON.stringify({ type: 'finalized-segment-audio-url', data: audioUrl }));
+            });
 
             
             maestraClient.on('language-detected', (language) => ws.send(JSON.stringify({ type: 'language-detected', data: language })));

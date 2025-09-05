@@ -37,7 +37,8 @@ const clientConfig = {
   secure: true,
   sourceLanguage: 'en',       // Optional: Source language ('en', 'fr', 'es', 'auto', etc.)
   targetLanguage: 'fr',       // Optional: Target language for translation (automatically enables translation)
-  saveToDashboard: true       // Optional: Save transcription to dashboard
+  saveToDashboard: true,      // Optional: Save transcription to dashboard
+  voiceOverEnabled: true      // Optional: Enable TTS voiceover (automatically plays audio when received)
 };
 
 // 1. Create a Maestra Client
@@ -343,6 +344,62 @@ process.on('SIGINT', () => {
 
 
 
+
+## 🎵 Voiceover Audio Playback
+
+When `voiceOverEnabled: true` is set, the SDK automatically plays TTS (Text-to-Speech) audio received from the server. No additional configuration is needed!
+
+### Basic Setup
+
+```javascript
+const maestraClient = new MaestraClient({
+  apiKey: 'YOUR_API_KEY',
+  sourceLanguage: 'en',
+  targetLanguage: 'es',        // Enable translation
+  voiceOverEnabled: true       // Audio will automatically play when received
+});
+
+// Listen for voiceover events (optional)
+maestraClient.on('voiceover-play', (data) => {
+  console.log('🎵 Playing voiceover:', data.audioUrl);
+});
+
+maestraClient.on('voiceover-ended', (data) => {
+  console.log('⏹️ Voiceover ended');
+});
+
+maestraClient.on('voiceover-autoplay-blocked', (data) => {
+  console.log('🚫 Autoplay blocked - user interaction required');
+  // You can show a button to the user to enable audio
+});
+```
+
+### Voiceover Events
+
+| Event | Description | Data |
+|-------|-------------|------|
+| `voiceover-play` | Audio started playing | `{ audioUrl }` |
+| `voiceover-ended` | Audio finished playing | `{ audioUrl }` |
+| `voiceover-error` | Audio playback error | `{ error, audioUrl }` |
+| `voiceover-autoplay-blocked` | Browser blocked autoplay | `{ audioUrl }` |
+| `voiceover-url` | Audio URL received (Node.js) | `{ audioUrl }` |
+
+### Browser Autoplay Handling
+
+Modern browsers may block autoplay. Handle this gracefully:
+
+```javascript
+maestraClient.on('voiceover-autoplay-blocked', (data) => {
+  // Show user a button to enable audio
+  const button = document.createElement('button');
+  button.textContent = 'Enable Audio';
+  button.onclick = () => {
+    // User interaction will allow subsequent audio to play
+    console.log('Audio enabled by user interaction');
+  };
+  document.body.appendChild(button);
+});
+```
 
 ## Language Configuration
 
