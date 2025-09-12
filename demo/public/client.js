@@ -32,13 +32,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const translationDiv = document.getElementById('translation');
     const apiKeyInput = document.getElementById('authToken');
     const enableTranslationCheckbox = document.getElementById('enableTranslation');
-    const enableVoiceOverCheckbox = document.getElementById('enableVoiceOver');
+    const voiceIdInput = document.getElementById('voiceId');
     const showInterimResultsCheckbox = document.getElementById('showInterimResults');
     const saveToDashboardCheckbox = document.getElementById('saveToDashboard');
     const sourceLanguageSelect = document.getElementById('sourceLanguage');
     const targetLanguageSelect = document.getElementById('targetLanguage');
     const targetLanguageGroup = document.getElementById('targetLanguageGroup');
-    const voiceOverGroup = document.getElementById('voiceOverGroup');
+    const voiceIdGroup = document.getElementById('voiceIdGroup');
     
     // New UI Elements
     const setupPanel = document.getElementById('setupPanel');
@@ -68,7 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let mediaStream;
     let detectedLanguage = null;
     let translationEnabled = false;
-    let voiceOverEnabled = false;
+    let voiceId = null;
     let showInterimResults = true;
     let saveToDashboard = false;
     let currentActiveTab = 'microphone';
@@ -110,12 +110,12 @@ document.addEventListener('DOMContentLoaded', () => {
     enableTranslationCheckbox.addEventListener('change', () => {
         translationEnabled = enableTranslationCheckbox.checked;
         targetLanguageGroup.style.display = translationEnabled ? 'block' : 'none';
-        voiceOverGroup.style.display = translationEnabled ? 'block' : 'none';
+        voiceIdGroup.style.display = translationEnabled ? 'block' : 'none';
         
-        // If translation is disabled, also disable voiceover
+        // If translation is disabled, also clear voiceId
         if (!translationEnabled) {
-            enableVoiceOverCheckbox.checked = false;
-            voiceOverEnabled = false;
+            voiceIdInput.value = '';
+            voiceId = null;
         }
         
         if (isTranscribing) {
@@ -124,21 +124,22 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     /**
-     * Handle voiceover checkbox change
+     * Handle voiceId input change
      */
-    enableVoiceOverCheckbox.addEventListener('change', () => {
-        voiceOverEnabled = enableVoiceOverCheckbox.checked;
+    voiceIdInput.addEventListener('input', () => {
+        voiceId = voiceIdInput.value.trim() || null;
         
-        // Voiceover requires translation
-        if (voiceOverEnabled && !translationEnabled) {
+        // VoiceId requires translation
+        if (voiceId && !translationEnabled) {
             enableTranslationCheckbox.checked = true;
             translationEnabled = true;
             targetLanguageGroup.style.display = 'block';
-            logStatus('Translation automatically enabled for voiceover.');
+            voiceIdGroup.style.display = 'block';
+            logStatus('Translation automatically enabled for voice-over.');
         }
         
         if (isTranscribing) {
-            logStatus('Voiceover setting changed. Please restart to apply changes.');
+            logStatus('Voice ID changed. Please restart to apply changes.');
         }
     });
     
@@ -309,7 +310,7 @@ document.addEventListener('DOMContentLoaded', () => {
             logStatus('Connecting...');
             
             translationEnabled = enableTranslationCheckbox.checked;
-            voiceOverEnabled = enableVoiceOverCheckbox.checked;
+            voiceId = voiceIdInput.value.trim() || null;
             saveToDashboard = saveToDashboardCheckbox.checked;
             
             let config = {
@@ -319,7 +320,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 secure: true,
                 source: currentActiveTab,
                 translationEnabled: translationEnabled,
-                voiceOverEnabled: voiceOverEnabled,
+                voiceId: voiceId,
                 saveToDashboard: saveToDashboard
             };
             
@@ -399,7 +400,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     break;
                     
                 case 'finalized-segment-audio-url':
-                    if (voiceOverEnabled && message.data) {
+                    if (voiceId && message.data) {
                         playVoiceoverAudio(message.data);
                     }
                     break;
