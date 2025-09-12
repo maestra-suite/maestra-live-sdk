@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.2] - 2025-09-12
+### Added
+- **Voice Over Feature**: voiceId parameter added instead of voiceOverEnabled.
+
 ## [0.1.1] - 2025-09-05
 ### Added
 - **Voice Over Feature**: Added voice over feature for development of web applications.

@@ -76,7 +76,8 @@ const clientConfig = {
   secure: true,
   sourceLanguage: 'en',       // Optional: Source language ('en', 'fr', 'es', 'auto', etc.)
   targetLanguage: 'fr',       // Optional: Target language for translation (automatically enables translation)
-  saveToDashboard: true       // Optional: Save transcription to dashboard
+  saveToDashboard: true,      // Optional: Save transcription to dashboard
+  voiceId: 'FrenchFemale8'    // Optional: Voice ID for TTS voiceover (automatically enables and plays audio when received)
 };
 
 // 1. Create a Maestra Client
@@ -355,6 +356,112 @@ process.on('SIGINT', () => {
 <li>Use <code>useInterim: true</code> for faster caption updates with some flickering</li>
 <li>Use <code>useInterim: false</code> for more stable captions with slight delay</li>
 </ul>
+<h2>🎵 Voiceover Audio Playback</h2>
+<p>When a <code>voiceId</code> is provided, the SDK automatically enables TTS (Text-to-Speech) and plays audio received from the server. No additional configuration is needed!</p>
+<h3>Basic Setup</h3>
+<pre class="prettyprint source lang-javascript"><code>const maestraClient = new MaestraClient({
+  apiKey: 'YOUR_API_KEY',
+  sourceLanguage: 'en',
+  targetLanguage: 'es',        // Enable translation
+  voiceId: 'SpanishFemale2'    // Voice ID automatically enables voiceover and plays audio when received
+});
+
+// Listen for voiceover events (optional)
+maestraClient.on('voiceover-play', (data) => {
+  console.log('🎵 Playing voiceover:', data.audioUrl);
+});
+
+maestraClient.on('voiceover-ended', (data) => {
+  console.log('⏹️ Voiceover ended');
+});
+
+maestraClient.on('voiceover-autoplay-blocked', (data) => {
+  console.log('🚫 Autoplay blocked - user interaction required');
+  // You can show a button to the user to enable audio
+});
+</code></pre>
+<h3>Voice ID Configuration</h3>
+<p>Voice IDs determine which TTS voice is used for voiceover. You can get available voice IDs from the Maestra API:</p>
+<pre class="prettyprint source lang-javascript"><code>// Example voice IDs for different languages:
+const voiceIds = {
+  'en': 'EnglishFemale1',     // English female voice
+  'es': 'SpanishMale2',       // Spanish male voice  
+  'fr': 'FrenchFemale8',      // French female voice
+  'de': 'GermanMale1',        // German male voice
+  'it': 'ItalianFemale3'      // Italian female voice
+};
+
+const maestraClient = new MaestraClient({
+  apiKey: 'YOUR_API_KEY',
+  sourceLanguage: 'en',
+  targetLanguage: 'fr',
+  voiceId: voiceIds['fr']     // Use French voice for French translation
+});
+</code></pre>
+<p><strong>Getting Available Voice IDs:</strong></p>
+<p>You can retrieve available voices using the Maestra API:</p>
+<pre class="prettyprint source lang-javascript"><code>// Fetch available voices (example)
+fetch('https://companion.maestrasuite.com/api/listVoices?groupByLanguage=true', {
+  method: 'GET',
+  headers: {
+    &quot;apiKey&quot;: &quot;YOUR_API_KEY&quot;
+  }
+}).then(response => response.json())
+  .then(voices => {
+    console.log('Available voices:', voices);
+    // Use the voiceId from the response
+  });
+</code></pre>
+<h3>Voiceover Events</h3>
+<table>
+<thead>
+<tr>
+<th>Event</th>
+<th>Description</th>
+<th>Data</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>voiceover-play</code></td>
+<td>Audio started playing</td>
+<td><code>{ audioUrl }</code></td>
+</tr>
+<tr>
+<td><code>voiceover-ended</code></td>
+<td>Audio finished playing</td>
+<td><code>{ audioUrl }</code></td>
+</tr>
+<tr>
+<td><code>voiceover-error</code></td>
+<td>Audio playback error</td>
+<td><code>{ error, audioUrl }</code></td>
+</tr>
+<tr>
+<td><code>voiceover-autoplay-blocked</code></td>
+<td>Browser blocked autoplay</td>
+<td><code>{ audioUrl }</code></td>
+</tr>
+<tr>
+<td><code>voiceover-url</code></td>
+<td>Audio URL received (Node.js)</td>
+<td><code>{ audioUrl }</code></td>
+</tr>
+</tbody>
+</table>
+<h3>Browser Autoplay Handling</h3>
+<p>Modern browsers may block autoplay. Handle this gracefully:</p>
+<pre class="prettyprint source lang-javascript"><code>maestraClient.on('voiceover-autoplay-blocked', (data) => {
+  // Show user a button to enable audio
+  const button = document.createElement('button');
+  button.textContent = 'Enable Audio';
+  button.onclick = () => {
+    // User interaction will allow subsequent audio to play
+    console.log('Audio enabled by user interaction');
+  };
+  document.body.appendChild(button);
+});
+</code></pre>
 <h2>Language Configuration</h2>
 <p>The SDK supports both transcription and real-time translation with flexible language configuration:</p>
 <h3>Source Language Options</h3>
@@ -421,11 +528,12 @@ client.on('interim-translation', (segments) => { /* ... */ });
 client.on('finalized-translation', (segment) => { /* ... */ });
 </code></pre>
 <h3>Backward Compatibility</h3>
-<p>The SDK maintains backward compatibility with the legacy <code>language</code> parameter:</p>
+<p>The SDK maintains backward compatibility with legacy parameters:</p>
 <pre class="prettyprint source lang-javascript"><code>// ✅ New way (recommended)
 const client = new MaestraClient({
   sourceLanguage: 'en',
-  targetLanguage: 'fr'
+  targetLanguage: 'fr',
+  voiceId: 'FrenchFemale8'  // New voiceId parameter
 });
 
 // ✅ Legacy way (still works)
@@ -434,6 +542,12 @@ const client = new MaestraClient({
   targetLanguage: 'fr'
 });
 </code></pre>
+<p><strong>⚠️ Breaking Change Notice:</strong></p>
+<ul>
+<li><code>voiceOverEnabled: true</code> has been replaced with <code>voiceId: 'VoiceIdString'</code></li>
+<li>Providing a <code>voiceId</code> automatically enables voiceover functionality</li>
+<li>The old <code>voiceOverEnabled</code> parameter is deprecated but still supported for backward compatibility</li>
+</ul>
 <h2>API Overview</h2>
 <h3><code>MaestraClient</code></h3>
 <p>The main client for interacting with the Maestra API.</p>
@@ -446,6 +560,7 @@ const client = new MaestraClient({
 <li><code>sourceLanguage</code> (string): Source language code or 'auto' for detection</li>
 <li><code>targetLanguage</code> (string): Target language for translation (automatically enables translation when specified)</li>
 <li><code>saveToDashboard</code> (boolean): Save transcription to dashboard after session</li>
+<li><code>voiceId</code> (string): Voice ID for TTS voiceover (automatically enables voiceover when provided)</li>
 <li><code>useVad</code> (boolean): Use voice activity detection (default: true)</li>
 </ul>
 <p><strong>Events:</strong></p>
@@ -972,7 +1087,7 @@ message handling, and event emission for transcription results.</p></div>
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Fri Aug 08 2025 13:17:01 GMT+0300 (GMT+03:00)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Fri Sep 12 2025 16:17:29 GMT+0300 (GMT+03:00)
 </footer>
 
 <script> prettyPrint(); </script>

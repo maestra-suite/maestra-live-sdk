@@ -38,7 +38,7 @@ const clientConfig = {
   sourceLanguage: 'en',       // Optional: Source language ('en', 'fr', 'es', 'auto', etc.)
   targetLanguage: 'fr',       // Optional: Target language for translation (automatically enables translation)
   saveToDashboard: true,      // Optional: Save transcription to dashboard
-  voiceOverEnabled: true      // Optional: Enable TTS voiceover (automatically plays audio when received)
+  voiceId: 'FrenchFemale8'    // Optional: Voice ID for TTS voiceover (automatically enables and plays audio when received)
 };
 
 // 1. Create a Maestra Client
@@ -347,7 +347,7 @@ process.on('SIGINT', () => {
 
 ## 🎵 Voiceover Audio Playback
 
-When `voiceOverEnabled: true` is set, the SDK automatically plays TTS (Text-to-Speech) audio received from the server. No additional configuration is needed!
+When a `voiceId` is provided, the SDK automatically enables TTS (Text-to-Speech) and plays audio received from the server. No additional configuration is needed!
 
 ### Basic Setup
 
@@ -356,7 +356,7 @@ const maestraClient = new MaestraClient({
   apiKey: 'YOUR_API_KEY',
   sourceLanguage: 'en',
   targetLanguage: 'es',        // Enable translation
-  voiceOverEnabled: true       // Audio will automatically play when received
+  voiceId: 'SpanishFemale2'    // Voice ID automatically enables voiceover and plays audio when received
 });
 
 // Listen for voiceover events (optional)
@@ -372,6 +372,46 @@ maestraClient.on('voiceover-autoplay-blocked', (data) => {
   console.log('🚫 Autoplay blocked - user interaction required');
   // You can show a button to the user to enable audio
 });
+```
+
+### Voice ID Configuration
+
+Voice IDs determine which TTS voice is used for voiceover. You can get available voice IDs from the Maestra API:
+
+```javascript
+// Example voice IDs for different languages:
+const voiceIds = {
+  'en': 'EnglishFemale1',     // English female voice
+  'es': 'SpanishMale2',       // Spanish male voice  
+  'fr': 'FrenchFemale8',      // French female voice
+  'de': 'GermanMale1',        // German male voice
+  'it': 'ItalianFemale3'      // Italian female voice
+};
+
+const maestraClient = new MaestraClient({
+  apiKey: 'YOUR_API_KEY',
+  sourceLanguage: 'en',
+  targetLanguage: 'fr',
+  voiceId: voiceIds['fr']     // Use French voice for French translation
+});
+```
+
+**Getting Available Voice IDs:**
+
+You can retrieve available voices using the Maestra API:
+
+```javascript
+// Fetch available voices (example)
+fetch('https://companion.maestrasuite.com/api/listVoices?groupByLanguage=true', {
+  method: 'GET',
+  headers: {
+    "apiKey": "YOUR_API_KEY"
+  }
+}).then(response => response.json())
+  .then(voices => {
+    console.log('Available voices:', voices);
+    // Use the voiceId from the response
+  });
 ```
 
 ### Voiceover Events
@@ -489,13 +529,14 @@ client.on('finalized-translation', (segment) => { /* ... */ });
 
 ### Backward Compatibility
 
-The SDK maintains backward compatibility with the legacy `language` parameter:
+The SDK maintains backward compatibility with legacy parameters:
 
 ```javascript
 // ✅ New way (recommended)
 const client = new MaestraClient({
   sourceLanguage: 'en',
-  targetLanguage: 'fr'
+  targetLanguage: 'fr',
+  voiceId: 'FrenchFemale8'  // New voiceId parameter
 });
 
 // ✅ Legacy way (still works)
@@ -504,6 +545,11 @@ const client = new MaestraClient({
   targetLanguage: 'fr'
 });
 ```
+
+**⚠️ Breaking Change Notice:**
+- `voiceOverEnabled: true` has been replaced with `voiceId: 'VoiceIdString'`
+- Providing a `voiceId` automatically enables voiceover functionality
+- The old `voiceOverEnabled` parameter is deprecated but still supported for backward compatibility
 
 ## API Overview
 
@@ -520,6 +566,7 @@ The main client for interacting with the Maestra API.
 *   `sourceLanguage` (string): Source language code or 'auto' for detection
 *   `targetLanguage` (string): Target language for translation (automatically enables translation when specified)
 *   `saveToDashboard` (boolean): Save transcription to dashboard after session
+*   `voiceId` (string): Voice ID for TTS voiceover (automatically enables voiceover when provided)
 *   `useVad` (boolean): Use voice activity detection (default: true)
 
 **Events:**
