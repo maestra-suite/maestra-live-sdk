@@ -315,9 +315,9 @@ document.addEventListener('DOMContentLoaded', () => {
             
             let config = {
                 apiKey: apiKeyInput.value.trim(),
-                host: 'localhost',//'wlive2.maestra.ai',
-                port: 5901,//443,
-                secure: false,//true
+                host: 'wlive2.maestra.ai',
+                port: 443,
+                secure: true,
                 source: currentActiveTab,
                 translationEnabled: translationEnabled,
                 voiceId: voiceId,
