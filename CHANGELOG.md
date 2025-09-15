@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.3] - 2025-09-12
+### Added
+- **Github Repository Link**: Now you can access to full repository with demo web application and example files.
+
+
 ## [0.1.2] - 2025-09-12
 ### Added
 - **Voice Over Feature**: voiceId parameter added instead of voiceOverEnabled.
