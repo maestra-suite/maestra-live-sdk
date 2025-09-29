@@ -349,6 +349,27 @@ process.on('SIGINT', () => {
 
 When a `voiceId` is provided, the SDK automatically enables TTS (Text-to-Speech) and plays audio received from the server. No additional configuration is needed!
 
+## 🎭 Automatic Voice Cloning
+
+The SDK supports automatic voice cloning functionality when enabled. This feature allows the system to clone the speaker's voice and use it for TTS generation.
+
+### Voice Cloning Setup
+
+```javascript
+const maestraClient = new MaestraClient({
+  apiKey: 'YOUR_API_KEY',
+  sourceLanguage: 'en',
+  targetLanguage: 'es',
+  autoVoiceCloning: true,      // Enable automatic voice cloning
+  voiceId: 'SpanishFemale2'    // Fallback voice if cloning is not available
+});
+
+// Voice cloning works automatically - no additional setup required
+maestraClient.on('ready', () => {
+  console.log('✅ Client ready with voice cloning enabled');
+});
+```
+
 ### Basic Setup
 
 ```javascript
@@ -567,6 +588,7 @@ The main client for interacting with the Maestra API.
 *   `targetLanguage` (string): Target language for translation (automatically enables translation when specified)
 *   `saveToDashboard` (boolean): Save transcription to dashboard after session
 *   `voiceId` (string): Voice ID for TTS voiceover (automatically enables voiceover when provided)
+*   `autoVoiceCloning` (boolean): Enable automatic voice cloning (default: false)
 *   `useVad` (boolean): Use voice activity detection (default: true)
 
 **Events:**

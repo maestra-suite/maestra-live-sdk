@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.4] - 2025-09-26
+### Added
+- **Auto Voice Cloning**: Now when this parameter is enabled, voiceover feature will work with your own voice.
+
 ## [0.1.3] - 2025-09-12
 ### Added
 - **Github Repository Link**: Now you can access to full repository with demo web application and example files.

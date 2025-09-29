@@ -39,6 +39,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const targetLanguageSelect = document.getElementById('targetLanguage');
     const targetLanguageGroup = document.getElementById('targetLanguageGroup');
     const voiceIdGroup = document.getElementById('voiceIdGroup');
+    const autoVoiceCloningCheckbox = document.getElementById('autoVoiceCloning');
+    const autoVoiceCloningGroup = document.getElementById('autoVoiceCloningGroup');
     
     // New UI Elements
     const setupPanel = document.getElementById('setupPanel');
@@ -69,6 +71,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let detectedLanguage = null;
     let translationEnabled = false;
     let voiceId = null;
+    let autoVoiceCloning = false;
     let showInterimResults = true;
     let saveToDashboard = false;
     let currentActiveTab = 'microphone';
@@ -111,11 +114,14 @@ document.addEventListener('DOMContentLoaded', () => {
         translationEnabled = enableTranslationCheckbox.checked;
         targetLanguageGroup.style.display = translationEnabled ? 'block' : 'none';
         voiceIdGroup.style.display = translationEnabled ? 'block' : 'none';
+        autoVoiceCloningGroup.style.display = translationEnabled ? 'block' : 'none';
         
-        // If translation is disabled, also clear voiceId
+        // If translation is disabled, also clear voiceId and autoVoiceCloning
         if (!translationEnabled) {
             voiceIdInput.value = '';
             voiceId = null;
+            autoVoiceCloningCheckbox.checked = false;
+            autoVoiceCloning = false;
         }
         
         if (isTranscribing) {
@@ -135,11 +141,39 @@ document.addEventListener('DOMContentLoaded', () => {
             translationEnabled = true;
             targetLanguageGroup.style.display = 'block';
             voiceIdGroup.style.display = 'block';
+            autoVoiceCloningGroup.style.display = 'block';
             logStatus('Translation automatically enabled for voice-over.');
         }
         
         if (isTranscribing) {
             logStatus('Voice ID changed. Please restart to apply changes.');
+        }
+    });
+
+    /**
+     * Handle auto voice cloning checkbox change
+     */
+    autoVoiceCloningCheckbox.addEventListener('change', () => {
+        autoVoiceCloning = autoVoiceCloningCheckbox.checked;
+        
+        // Auto voice cloning requires translation (will use speaker's own voice)
+        if (autoVoiceCloning && !translationEnabled) {
+            enableTranslationCheckbox.checked = true;
+            translationEnabled = true;
+            targetLanguageGroup.style.display = 'block';
+            voiceIdGroup.style.display = 'block';
+            autoVoiceCloningGroup.style.display = 'block';
+            logStatus('Translation automatically enabled for voice cloning. Your voice will be cloned automatically.');
+        }
+        
+        if (autoVoiceCloning) {
+            logStatus('Auto voice cloning enabled. Your own voice will be used for voiceover.');
+        } else {
+            logStatus('Auto voice cloning disabled. Standard voice ID will be used if provided.');
+        }
+        
+        if (isTranscribing) {
+            logStatus('Auto voice cloning changed. Please restart to apply changes.');
         }
     });
     
@@ -311,16 +345,18 @@ document.addEventListener('DOMContentLoaded', () => {
             
             translationEnabled = enableTranslationCheckbox.checked;
             voiceId = voiceIdInput.value.trim() || null;
+            autoVoiceCloning = autoVoiceCloningCheckbox.checked;
             saveToDashboard = saveToDashboardCheckbox.checked;
             
             let config = {
                 apiKey: apiKeyInput.value.trim(),
-                host: 'wlive2.maestra.ai',
-                port: 443,
-                secure: true,
+                host: 'localhost',//'wlive2.maestra.ai',
+                port: 5901,//443,
+                secure: false,
                 source: currentActiveTab,
                 translationEnabled: translationEnabled,
                 voiceId: voiceId,
+                autoVoiceCloning: autoVoiceCloning,
                 saveToDashboard: saveToDashboard
             };
             

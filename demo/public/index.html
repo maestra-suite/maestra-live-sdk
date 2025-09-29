@@ -166,8 +166,17 @@
                         
                         <div class="setting-item" id="voiceIdGroup" style="display: none;">
                             <label for="voiceId">Voice ID for Voice Over</label>
-                            <input type="text" id="voiceId" placeholder="Enter voice ID (e.g., voice-123)">
-                            <span class="setting-help" title="Enter a voice ID to enable TTS audio of translated text (requires translation)">🎵</span>
+                            <input type="text" id="voiceId" placeholder="Enter voice ID (e.g., FrenchFemale8)">
+                            <span class="setting-help" title="Fallback voice ID for TTS when voice cloning is not available (optional with auto voice cloning)">🎵</span>
+                        </div>
+                        
+                        <div class="setting-item" id="autoVoiceCloningGroup" style="display: none;">
+                            <label>
+                                <input type="checkbox" id="autoVoiceCloning">
+                                <span class="checkmark"></span>
+                                Auto Voice Cloning
+                                <span class="setting-help" title="Use your own voice for TTS by automatically cloning it from your speech (requires translation)">🎭</span>
+                            </label>
                         </div>
                         
                         <div class="setting-item">
