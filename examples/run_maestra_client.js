@@ -126,8 +126,8 @@ async function main() {
 
   const clientConfig = {
     apiKey: argv.apikey,
-    host: argv.host || 'wlive2.maestra.ai',
-    port: argv.port || 443,
+    host: argv.host || 'live-node-dot-maestro-218920.uk.r.appspot.com',
+    // No port needed for Google App Engine
     secure: argv.secure !== undefined ? argv.secure : true,
   };
   
@@ -161,6 +161,7 @@ async function main() {
   // --- Event Listeners ---
   maestraClient.on('ready', () => {
     console.log('✅ Client is ready and connected to the server.');
+    console.log('🎤 Firebase settings should be updated. Waiting for transcription...');
 
     if (argv.file) {
       try {
@@ -241,11 +242,13 @@ async function main() {
   });
 
   maestraClient.on('interim-transcription', (segments) => {
+    console.log('🔄 Received interim transcription:', segments);
     const text = segments.map(s => s.text).join(' ');
     process.stdout.write(`\r👂 Original: ${text}`);
   });
 
   maestraClient.on('finalized-transcription', (segment) => {
+    console.log('✅ Received finalized transcription:', segment);
     process.stdout.clearLine(0);
     process.stdout.cursorTo(0);
     const message = `✅ Original: ${segment.text} [${segment.start}s -> ${segment.end}s]`;
@@ -285,7 +288,7 @@ async function main() {
   // --- Start Connection ---
   try {
     console.log('🔄 Attempting to connect to the server...');
-    console.log(`📍 Connecting to: ${clientConfig.secure ? 'wss' : 'ws'}://${clientConfig.host}:${clientConfig.port}`);
+    console.log(`📍 Connecting to: ${clientConfig.secure ? 'wss' : 'ws'}://${clientConfig.host}`);
     maestraClient.connect();
   } catch (error) {
     console.error('❌ Failed to start connection:', error.message || error);

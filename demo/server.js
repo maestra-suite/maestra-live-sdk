@@ -131,7 +131,13 @@ wss.on('connection', (ws) => {
             });
             
             console.log(`[${connectionId}] Connecting to Maestra...`);
-            maestraClient.connect();
+            // Connect to Maestra (now async with Firebase settings update)
+            maestraClient.connect()
+              .catch((error) => {
+                clearConnectionTimeout();
+                console.error(`[${connectionId}] Failed to connect to Maestra:`, error);
+                ws.send(JSON.stringify({ type: 'error', message: `Failed to connect: ${error.message}` }));
+              });
 
           } catch (error) {
             clearConnectionTimeout();
@@ -152,10 +158,8 @@ wss.on('connection', (ws) => {
     } catch (e) {
       // If JSON.parse fails, it must be a binary audio packet
       if (message instanceof Buffer) {
-        console.log(`[${connectionId}] Received audio buffer: ${message.length} bytes`);
         if (maestraClient && maestraClient.streamProcessor instanceof StreamInputProcessor) {
           maestraClient.streamProcessor.pushAudio(message);
-          console.log(`[${connectionId}] Forwarded audio to processor`);
         } else {
           console.warn(`[${connectionId}] No processor available for audio`);
         }

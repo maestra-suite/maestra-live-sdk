@@ -350,8 +350,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             let config = {
                 apiKey: apiKeyInput.value.trim(),
-                host: 'wlive2.maestra.ai',
-                port: 443,
+                host: 'live-node-dot-maestro-218920.uk.r.appspot.com',
                 secure: true,
                 source: currentActiveTab,
                 translationEnabled: translationEnabled,
@@ -360,9 +359,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 saveToDashboard: saveToDashboard
             };
             
-            // Add source language
+            // Add source language (always include, even if 'auto')
             const sourceLanguage = sourceLanguageSelect.value;
-            if (sourceLanguage && sourceLanguage !== 'auto') {
+            if (sourceLanguage) {
                 config.sourceLanguage = sourceLanguage;
             }
             
