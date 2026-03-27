@@ -27,7 +27,8 @@
         "test": "echo \"Error: no test specified\" && exit 1",
         "docs:generate": "jsdoc -c jsdoc.json",
         "docs:open": "start docs/index.html",
-        "docs": "npm run docs:generate && npm run docs:open"
+        "docs": "npm run docs:generate && npm run docs:open",
+        "publish": "npm publish --access public"
     },
     "keywords": [
         "transcription",
