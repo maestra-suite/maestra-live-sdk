@@ -19,7 +19,7 @@ A comprehensive web-based demonstration of the Maestra SDK capabilities, showcas
 
 - Node.js (v14 or higher)
 - Valid Maestra API key
-- Access to Maestra production server (wlive2.maestra.ai) or local development server
+- Access to Maestra production server (maestra-live.maestra.ai) or local development server
 
 ### Installation
 
@@ -43,7 +43,7 @@ node server.js
 http://localhost:3000
 ```
 
-**Note**: The demo is now configured to connect to the production server (wlive2.maestra.ai:443) by default. If you need to connect to a local development server, you'll need to modify the configuration in `demo/public/client.js`.
+**Note**: The demo is now configured to connect to the production server (maestra-live.maestra.ai:443) by default. If you need to connect to a local development server, you'll need to modify the configuration in `demo/public/client.js`.
 
 ## Usage
 

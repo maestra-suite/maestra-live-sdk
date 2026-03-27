@@ -32,7 +32,7 @@ const { MaestraClient, MicrophoneProcessor } = require('@maestra-ai/live-sdk');
 // Configuration
 const clientConfig = {
   apiKey: 'YOUR_API_KEY', // Replace with your actual API key
-  host: 'wlive2.maestra.ai',
+  host: 'maestra-live.maestra.ai',
   port: 443,
   secure: true,
   sourceLanguage: 'en',       // Optional: Source language ('en', 'fr', 'es', 'auto', etc.)
@@ -581,7 +581,7 @@ The main client for interacting with the Maestra API.
 **Constructor Options:**
 
 *   `apiKey` (string): Maestra API key (required)
-*   `host` (string): Server hostname (default: 'wlive2.maestra.ai')
+*   `host` (string): Server hostname (default: 'maestra-live.maestra.ai')
 *   `port` (number): Server port (default: 443)
 *   `secure` (boolean): Use WSS connection (default: true)
 *   `sourceLanguage` (string): Source language code or 'auto' for detection

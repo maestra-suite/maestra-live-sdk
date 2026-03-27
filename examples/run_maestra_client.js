@@ -126,7 +126,7 @@ async function main() {
 
   const clientConfig = {
     apiKey: argv.apikey,
-    host: argv.host || 'wlive2.maestra.ai',
+    host: argv.host || 'maestra-live.maestra.ai',
     port: argv.port || 443,
     secure: argv.secure !== undefined ? argv.secure : true,
   };

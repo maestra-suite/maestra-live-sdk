@@ -350,7 +350,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             let config = {
                 apiKey: apiKeyInput.value.trim(),
-                host: 'wlive2.maestra.ai',
+                host: 'maestra-live.maestra.ai',
                 port: 443,
                 secure: true,
                 source: currentActiveTab,
@@ -410,28 +410,28 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     // Only show interim results if the toggle is enabled
                     if (showInterimResults && message.data && message.data.length > 0) {
-                        const text = message.data.map(s => s.text).join(' ');
+                        const text = message.data.map(s => s.text.trim()).join(' ');
                         updateTranscript(text);
                     }
                     break;
-                    
+
                 case 'finalized-transcription':
                     if (message.data && message.data.text) {
-                        appendToTranscript(message.data.text);
+                        appendToTranscript(message.data.text.trim());
                     }
                     break;
-                    
+
                 case 'interim-translation':
                     // Only show interim translations if both translation and interim results are enabled
                     if (translationEnabled && showInterimResults && message.data && message.data.length > 0) {
-                        const text = message.data.map(s => s.text).join(' ');
+                        const text = message.data.map(s => s.text.trim()).join(' ');
                         updateTranslation(text);
                     }
                     break;
-                    
+
                 case 'finalized-translation':
                     if (translationEnabled && message.data && message.data.text) {
-                        appendToTranslation(message.data.text);
+                        appendToTranslation(message.data.text.trim());
                     }
                     break;
                     
@@ -900,10 +900,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (lastLine && lastLine.classList.contains('interim')) {
             lastLine.textContent = text;
             lastLine.classList.remove('interim');
+            lastLine.style.color = '#ffffff';
+            lastLine.style.opacity = '1';
         } else {
             const line = document.createElement('div');
             line.textContent = text;
             line.style.marginBottom = '1rem';
+            line.style.color = '#ffffff';
             transcriptDiv.appendChild(line);
         }
         transcriptDiv.scrollTop = transcriptDiv.scrollHeight;
@@ -921,7 +924,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const newLine = document.createElement('div');
             newLine.textContent = text;
             newLine.classList.add('interim');
-            newLine.style.opacity = '0.7';
+            newLine.style.color = '#9CA3AF';
             newLine.style.marginBottom = '1rem';
             transcriptDiv.appendChild(newLine);
         }
@@ -937,10 +940,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (lastLine && lastLine.classList.contains('interim')) {
             lastLine.textContent = text;
             lastLine.classList.remove('interim');
+            lastLine.style.color = '#ffffff';
         } else {
             const line = document.createElement('div');
             line.textContent = text;
             line.style.marginBottom = '1rem';
+            line.style.color = '#ffffff';
             translationDiv.appendChild(line);
         }
         translationDiv.scrollTop = translationDiv.scrollHeight;
@@ -958,7 +963,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const newLine = document.createElement('div');
             newLine.textContent = text;
             newLine.classList.add('interim');
-            newLine.style.opacity = '0.7';
+            newLine.style.color = '#9CA3AF';
             newLine.style.marginBottom = '1rem';
             translationDiv.appendChild(newLine);
         }

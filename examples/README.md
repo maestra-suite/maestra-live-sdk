@@ -144,7 +144,7 @@ node examples/run_maestra_client.js \
   --targetLanguage en \
   --translationEnabled true \
   --saveToDashboard true \
-  --host wlive2.maestra.ai \
+  --host maestra-live.maestra.ai \
   --port 443 \
   --secure true
 ```
@@ -163,7 +163,7 @@ node examples/run_maestra_client.js \
 | `--rtmps_url` | - | string | RTMP/S stream URL | No | - |
 | `--rtsp_url` | - | string | RTSP stream URL | No | - |
 | `--srt_url` | - | string | SRT stream URL | No | - |
-| `--host` | - | string | Server hostname | No | `wlive2.maestra.ai` |
+| `--host` | - | string | Server hostname | No | `maestra-live.maestra.ai` |
 | `--port` | - | number | Server port | No | `443` |
 | `--secure` | - | boolean | Use WSS connection | No | `true` |
 
@@ -198,7 +198,7 @@ The CLI provides real-time feedback with detailed information:
 ```
 📋 Client Configuration:
    🔑 API Key: sk-1234...
-   🌐 Host: wlive2.maestra.ai
+   🌐 Host: maestra-live.maestra.ai
    🔌 Port: 443
    🔒 Secure: true
 🗣️  Source language set to: auto
