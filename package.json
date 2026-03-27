@@ -1,6 +1,6 @@
 {
     "name": "@maestra-ai/live-sdk",
-    "version": "1.0.0",
+    "version": "1.0.2",
     "description": "Live SDK for Maestra AI transcription services",
     "main": "index.js",
     "files": [
@@ -28,7 +28,7 @@
         "docs:generate": "jsdoc -c jsdoc.json",
         "docs:open": "start docs/index.html",
         "docs": "npm run docs:generate && npm run docs:open",
-        "publish": "npm publish --access public"
+        "release": "npm publish --access public"
     },
     "keywords": [
         "transcription",
