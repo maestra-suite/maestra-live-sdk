@@ -24,7 +24,7 @@
     "url": "https://github.com/maestra-suite/maestra-live-sdk.git"
     },
     "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1",
+        "test": "node --test tests/*.test.js",
         "docs:generate": "jsdoc -c jsdoc.json",
         "docs:open": "node -e \"const c={darwin:'open',win32:'start'}[process.platform]||'xdg-open';require('child_process').execSync(c+' docs/index.html',{stdio:'inherit'})\"",
         "docs": "npm run docs:generate && npm run docs:open",
