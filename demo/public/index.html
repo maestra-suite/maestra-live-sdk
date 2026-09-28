@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Maestra Client SDK Example</title>
+    <title>Maestra Client SDK</title>
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="app-container">
@@ -16,14 +16,11 @@
                 <span>Maestra</span>
             </div>
             <div class="header-controls">
-                <button id="newSessionButton" class="new-session-button" style="display: none;">
-                    <span>+</span> New Session
+                <button id="newSessionButton" class="new-session-button" style="display: none;">New Session
                 </button>
-                <button id="restartButton" class="restart-button" style="display: none;">
-                    <span>🔄</span> Restart
+                <button id="restartButton" class="restart-button" style="display: none;">Restart
                 </button>
-                <button id="stopButton" class="stop-button" style="display: none;">
-                    <span>⏸</span> Stop Captioning
+                <button id="stopButton" class="stop-button" style="display: none;">Stop
                 </button>
                 <div class="language-selector" id="languageSelector" style="display: none;">
                     <div class="language-display">
@@ -41,7 +38,7 @@
             <!-- Setup Panel -->
             <div id="setupPanel" class="setup-panel">
                 <div class="setup-content">
-                    <h1>Maestra Client SDK Example</h1>
+                    <h1>Maestra Client SDK</h1>
                     
                     <div class="settings-grid">
                         <div class="setting-item">
@@ -165,9 +162,8 @@
                         </div>
                         
                         <div class="setting-item" id="voiceIdGroup" style="display: none;">
-                            <label for="voiceId">Voice ID for Voice Over</label>
+                            <label for="voiceId">Voice ID for Voice Over <span class="setting-help" tabindex="0" data-tooltip="Fallback voice ID for TTS when voice cloning is not available (optional with auto voice cloning)">ⓘ</span></label>
                             <input type="text" id="voiceId" placeholder="Enter voice ID (e.g., FrenchFemale8)">
-                            <span class="setting-help" title="Fallback voice ID for TTS when voice cloning is not available (optional with auto voice cloning)">🎵</span>
                         </div>
                         
                         <div class="setting-item" id="autoVoiceCloningGroup" style="display: none;">
@@ -175,7 +171,7 @@
                                 <input type="checkbox" id="autoVoiceCloning">
                                 <span class="checkmark"></span>
                                 Auto Voice Cloning
-                                <span class="setting-help" title="Use your own voice for TTS by automatically cloning it from your speech (requires translation)">🎭</span>
+                                <span class="setting-help" tabindex="0" data-tooltip="Use your own voice for TTS by automatically cloning it from your speech (requires translation)">ⓘ</span>
                             </label>
                         </div>
                         
@@ -184,7 +180,7 @@
                                 <input type="checkbox" id="showInterimResults" checked>
                                 <span class="checkmark"></span>
                                 Show Interim Results
-                                <span class="setting-help" title="Show real-time transcription results (unchecked = only final results)">ℹ️</span>
+                                <span class="setting-help" tabindex="0" data-tooltip="Show real-time transcription results (unchecked = only final results)">ⓘ</span>
                             </label>
                         </div>
                         
@@ -193,7 +189,7 @@
                                 <input type="checkbox" id="saveToDashboard">
                                 <span class="checkmark"></span>
                                 Save to Dashboard
-                                <span class="setting-help" title="Save transcription session to your Maestra dashboard">ℹ️</span>
+                                <span class="setting-help" tabindex="0" data-tooltip="Save transcription session to your Maestra dashboard">ⓘ</span>
                             </label>
                         </div>
                         
@@ -304,11 +300,11 @@
                     </div>
 
                     <div class="audio-source-tabs">
-                        <button class="tab-button active" data-tab="microphone">🎤 Microphone</button>
-                        <button class="tab-button" data-tab="hls">📺 HLS Stream</button>
-                        <button class="tab-button" data-tab="rtmp">📡 RTMP/S</button>
-                        <button class="tab-button" data-tab="rtsp">🎥 RTSP</button>
-                        <button class="tab-button" data-tab="srt">🔗 SRT</button>
+                        <button class="tab-button active" data-tab="microphone">Microphone</button>
+                        <button class="tab-button" data-tab="hls">HLS</button>
+                        <button class="tab-button" data-tab="rtmp">RTMP/S</button>
+                        <button class="tab-button" data-tab="rtsp">RTSP</button>
+                        <button class="tab-button" data-tab="srt">SRT</button>
                     </div>
 
                     <div class="tab-content-area">
@@ -329,7 +325,7 @@
                         </div>
                     </div>
 
-                    <button id="startButton" class="start-button">
+                    <button id="startButton" class="start-button" disabled>
                         Start
                     </button>
 
@@ -344,7 +340,7 @@
                 </div>
                 
                 <div class="transcript-container">
-                    <div class="transcript-column">
+                    <div class="transcript-column original-column">
                         <div class="column-header" id="originalHeader">Original</div>
                         <div class="transcript-content" id="transcript"></div>
                     </div>

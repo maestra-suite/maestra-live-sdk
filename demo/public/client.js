@@ -79,7 +79,10 @@ document.addEventListener('DOMContentLoaded', () => {
     let isTranscribing = false;
     
     // --- UI Logic ---
-    
+    document.querySelectorAll('.setting-help').forEach(help => {
+        help.addEventListener('click', event => event.preventDefault());
+    });
+
     /**
      * Initialize tab switching functionality
      */
@@ -113,9 +116,9 @@ document.addEventListener('DOMContentLoaded', () => {
      */
     enableTranslationCheckbox.addEventListener('change', () => {
         translationEnabled = enableTranslationCheckbox.checked;
-        targetLanguageGroup.style.display = translationEnabled ? 'block' : 'none';
-        voiceIdGroup.style.display = translationEnabled ? 'block' : 'none';
-        autoVoiceCloningGroup.style.display = translationEnabled ? 'block' : 'none';
+        targetLanguageGroup.style.display = translationEnabled ? 'flex' : 'none';
+        voiceIdGroup.style.display = translationEnabled ? 'flex' : 'none';
+        autoVoiceCloningGroup.style.display = translationEnabled ? 'flex' : 'none';
         
         // If translation is disabled, also clear voiceId and autoVoiceCloning
         if (!translationEnabled) {
@@ -292,7 +295,7 @@ document.addEventListener('DOMContentLoaded', () => {
         promptMessage.textContent = message;
         
         // Show the prompt message initially
-        promptMessage.style.display = 'flex';
+        setPromptVisible(true);
     }
 
     /**
@@ -406,9 +409,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                 case 'interim-transcription':
                     // Hide the prompt message once we start receiving transcription
-                    if (promptMessage.style.display !== 'none') {
-                        promptMessage.style.display = 'none';
-                    }
+                    setPromptVisible(false);
                     
                     // Only show interim results if the toggle is enabled
                     if (showInterimResults && message.data && message.data.length > 0) {
@@ -448,8 +449,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     break;
                     
                 case 'error':
-                    logStatus(`Error: ${message.message}`, true);
-                    stopTranscription();
+                    // Keep the error visible instead of the close handler's 'Disconnected'
+                    ws.onclose = null;
+                    if (isTranscribing) {
+                        stopTranscription();
+                    } else {
+                        ws.close();
+                        cleanUpAudio();
+                        resetStartButton();
+                    }
+                    logStatus(message.message, true);
                     break;
             }
         };
@@ -572,17 +581,26 @@ document.addEventListener('DOMContentLoaded', () => {
         startTranscription();
     }
 
+    function setPromptVisible(visible) {
+        promptMessage.style.display = visible ? 'flex' : 'none';
+        transcriptionPanel.classList.toggle('is-prompting', visible);
+    }
+
+    function resetStartButton() {
+        startButton.classList.remove('loading');
+        startButton.textContent = 'Start';
+    }
+
     /**
      * Reset UI to initial state
      */
     function resetUI() {
         console.log('Resetting UI to initial state');
         showSetupView();
-        startButton.classList.remove('loading');
-        startButton.textContent = 'Start';
+        resetStartButton();
         
         // Reset prompt message - will be updated when transcription starts
-        promptMessage.style.display = 'flex';
+        setPromptVisible(true);
         promptMessage.textContent = 'You can start speaking now...';
         
         // Reset status
@@ -795,11 +813,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function logStatus(message, isError = false) {
         console.log(isError ? `[ERROR] ${message}` : `[INFO] ${message}`);
         statusDiv.textContent = message;
-        if (isError) {
-            statusDiv.style.color = '#EF4444';
-        } else {
-            statusDiv.style.color = '#9CA3AF';
-        }
+        statusDiv.classList.toggle('is-error', isError);
     }
 
     /**
@@ -811,13 +825,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (lastLine && lastLine.classList.contains('interim')) {
             lastLine.textContent = text;
             lastLine.classList.remove('interim');
-            lastLine.style.color = '#ffffff';
-            lastLine.style.opacity = '1';
         } else {
             const line = document.createElement('div');
             line.textContent = text;
-            line.style.marginBottom = '1rem';
-            line.style.color = '#ffffff';
+            line.classList.add('transcript-line');
             transcriptDiv.appendChild(line);
         }
         transcriptDiv.scrollTop = transcriptDiv.scrollHeight;
@@ -834,9 +845,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             const newLine = document.createElement('div');
             newLine.textContent = text;
-            newLine.classList.add('interim');
-            newLine.style.color = '#9CA3AF';
-            newLine.style.marginBottom = '1rem';
+            newLine.classList.add('transcript-line', 'interim');
             transcriptDiv.appendChild(newLine);
         }
         transcriptDiv.scrollTop = transcriptDiv.scrollHeight;
@@ -851,12 +860,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (lastLine && lastLine.classList.contains('interim')) {
             lastLine.textContent = text;
             lastLine.classList.remove('interim');
-            lastLine.style.color = '#ffffff';
         } else {
             const line = document.createElement('div');
             line.textContent = text;
-            line.style.marginBottom = '1rem';
-            line.style.color = '#ffffff';
+            line.classList.add('transcript-line');
             translationDiv.appendChild(line);
         }
         translationDiv.scrollTop = translationDiv.scrollHeight;
@@ -873,9 +880,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             const newLine = document.createElement('div');
             newLine.textContent = text;
-            newLine.classList.add('interim');
-            newLine.style.color = '#9CA3AF';
-            newLine.style.marginBottom = '1rem';
+            newLine.classList.add('transcript-line', 'interim');
             translationDiv.appendChild(newLine);
         }
         translationDiv.scrollTop = translationDiv.scrollHeight;
@@ -934,6 +939,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Event Listeners ---
     
+    function updateStartButtonState() {
+        startButton.disabled = !apiKeyInput.value.trim();
+    }
+
+    apiKeyInput.addEventListener('input', updateStartButtonState);
+    updateStartButtonState();
+
     startButton.addEventListener('click', startTranscription);
     stopButton.addEventListener('click', stopTranscription);
     restartButton.addEventListener('click', restartTranscription);
