@@ -69,6 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let scriptProcessor;
     let mediaStream;
     let detectedLanguage = null;
+    let autoDetectActive = false;
     let translationEnabled = false;
     let voiceId = null;
     let autoVoiceCloning = false;
@@ -362,6 +363,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Add source language
             const sourceLanguage = sourceLanguageSelect.value;
+            autoDetectActive = sourceLanguage === 'auto';
             if (sourceLanguage && sourceLanguage !== 'auto') {
                 config.sourceLanguage = sourceLanguage;
             }
@@ -505,114 +507,23 @@ document.addEventListener('DOMContentLoaded', () => {
         
         detectedLanguage = language;
         
-        // If we're in auto-detect mode, update the source language dropdown to show detected language
-        if (sourceLanguageSelect.value === 'auto') {
+        // The dropdown leaves 'auto' after the first detection, so track the mode separately
+        if (autoDetectActive) {
             console.log('Detected language:', language);
-            
-            // Create a mapping of common language names to codes
-            const languageMap = {
-                'english': 'en',
-                'spanish': 'es',
-                'french': 'fr',
-                'german': 'de',
-                'italian': 'it',
-                'portuguese': 'pt',
-                'russian': 'ru',
-                'japanese': 'ja',
-                'korean': 'ko',
-                'chinese': 'zh',
-                'arabic': 'ar',
-                'hindi': 'hi',
-                'turkish': 'tr',
-                'dutch': 'nl',
-                'polish': 'pl',
-                'afrikaans': 'af',
-                'albanian': 'sq',
-                'amharic': 'am',
-                'armenian': 'hy',
-                'azerbaijani': 'az',
-                'basque': 'eu',
-                'belarusian': 'be',
-                'bengali': 'bn',
-                'bosnian': 'bs',
-                'bulgarian': 'bg',
-                'catalan': 'ca',
-                'croatian': 'hr',
-                'czech': 'cs',
-                'danish': 'da',
-                'estonian': 'et',
-                'finnish': 'fi',
-                'galician': 'gl',
-                'georgian': 'ka',
-                'greek': 'el',
-                'gujarati': 'gu',
-                'hebrew': 'he',
-                'hungarian': 'hu',
-                'icelandic': 'is',
-                'indonesian': 'id',
-                'javanese': 'jv',
-                'kannada': 'kn',
-                'kazakh': 'kk',
-                'khmer': 'km',
-                'lao': 'lo',
-                'latin': 'la',
-                'latvian': 'lv',
-                'lithuanian': 'lt',
-                'macedonian': 'mk',
-                'malay': 'ms',
-                'malayalam': 'ml',
-                'maltese': 'mt',
-                'marathi': 'mr',
-                'mongolian': 'mn',
-                'nepali': 'ne',
-                'norwegian': 'no',
-                'persian': 'fa',
-                'punjabi': 'pa',
-                'romanian': 'ro',
-                'sanskrit': 'sa',
-                'serbian': 'sr',
-                'sinhala': 'si',
-                'slovak': 'sk',
-                'slovenian': 'sl',
-                'somali': 'so',
-                'swahili': 'sw',
-                'swedish': 'sv',
-                'tagalog': 'tl',
-                'tamil': 'ta',
-                'telugu': 'te',
-                'thai': 'th',
-                'ukrainian': 'uk',
-                'urdu': 'ur',
-                'vietnamese': 'vi',
-                'welsh': 'cy',
-                'yoruba': 'yo'
-            };
-            
-            // Try to find by language mapping first
-            const languageCode = languageMap[language.toLowerCase()];
-            if (languageCode) {
-                console.log('Found language code:', languageCode);
-                sourceLanguageSelect.value = languageCode;
-                // Trigger change event to update UI
+
+            // The server sends a language code; match option values exactly, then names
+            const needle = String(language).toLowerCase();
+            const option = Array.from(sourceLanguageSelect.options).find(o =>
+                o.value.toLowerCase() === needle || o.textContent.trim().toLowerCase() === needle
+            );
+            if (option) {
+                sourceLanguageSelect.value = option.value;
                 sourceLanguageSelect.dispatchEvent(new Event('change'));
-            } else {
-                // Fallback: try to match by text content
-                const options = sourceLanguageSelect.options;
-                for (let i = 0; i < options.length; i++) {
-                    if (options[i].textContent.toLowerCase().includes(language.toLowerCase()) || 
-                        language.toLowerCase().includes(options[i].textContent.toLowerCase())) {
-                        console.log('Found by text match:', options[i].value);
-                        sourceLanguageSelect.value = options[i].value;
-                        // Trigger change event to update UI
-                        sourceLanguageSelect.dispatchEvent(new Event('change'));
-                        break;
-                    }
-                }
             }
-            
+
             console.log('Updated source language to:', sourceLanguageSelect.value);
         }
-        
+
         updateLanguageSelector();
         updateTranscriptionUI();
         logStatus(`${language} detected`);
