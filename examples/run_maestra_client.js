@@ -240,31 +240,66 @@ async function main() {
     console.log('🔴 Transcription started. Listening for audio...');
   });
 
+  const isTTY = process.stdout.isTTY;
+  const resetLine = (dir = 0) => {
+    if (isTTY) {
+      process.stdout.clearLine(dir);
+      process.stdout.cursorTo(0);
+    }
+  };
+
+  // Once the source is fully read, exit after the server output stops changing.
+  const IDLE_EXIT_MS = 8000;
+  let sourceEnded = false;
+  let idleTimer = null;
+  const lastOutput = {};
+  const onOutput = (kind, text) => {
+    if (lastOutput[kind] === text) return;
+    lastOutput[kind] = text;
+    if (!sourceEnded) return;
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(() => {
+      if (!isTTY) {
+        if (lastOutput['interim-transcription']) console.log(`👂 Original (interim): ${lastOutput['interim-transcription']}`);
+        if (lastOutput['interim-translation']) console.log(`🌐 Translation (interim): ${lastOutput['interim-translation']}`);
+      }
+      console.log('\n🏁 Source finished and no new results. Exiting.');
+      maestraClient.stop();
+      rl.close();
+      process.exit(0);
+    }, IDLE_EXIT_MS);
+  };
+
+  maestraClient.on('source-ended', () => {
+    sourceEnded = true;
+    onOutput('source', 'ended');
+  });
+
   maestraClient.on('interim-transcription', (segments) => {
     const text = segments.map(s => s.text).join(' ');
-    process.stdout.write(`\r👂 Original: ${text}`);
+    onOutput('interim-transcription', text);
+    if (isTTY) process.stdout.write(`\r👂 Original: ${text}`);
   });
 
   maestraClient.on('finalized-transcription', (segment) => {
-    process.stdout.clearLine(0);
-    process.stdout.cursorTo(0);
-    const message = `✅ Original: ${segment.text} [${segment.start}s -> ${segment.end}s]`;
-    console.log(message);
+    onOutput('finalized-transcription', segment.text);
+    resetLine();
+    console.log(`✅ Original: ${segment.text} [${segment.start}s -> ${segment.end}s]`);
   });
 
   maestraClient.on('interim-translation', (segments) => {
     const text = segments.map(s => s.text).join(' ');
-    // Move to the next line to print translation below the original
-    process.stdout.clearLine(1);
-    process.stdout.cursorTo(0);
-    process.stdout.write(`\r🌐 Translation: ${text}`);
+    onOutput('interim-translation', text);
+    if (isTTY) {
+      resetLine(1);
+      process.stdout.write(`\r🌐 Translation: ${text}`);
+    }
   });
 
   maestraClient.on('finalized-translation', (segment) => {
-    process.stdout.clearLine(1);
-    process.stdout.cursorTo(0);
-    const message = `\n🌐 Translated: ${segment.text} [${segment.start}s -> ${segment.end}s]`;
-    console.log(message);
+    onOutput('finalized-translation', segment.text);
+    resetLine(1);
+    console.log(`\n🌐 Translated: ${segment.text} [${segment.start}s -> ${segment.end}s]`);
   });
 
   maestraClient.on('error', (error) => {

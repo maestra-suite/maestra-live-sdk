@@ -26,7 +26,7 @@
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1",
         "docs:generate": "jsdoc -c jsdoc.json",
-        "docs:open": "start docs/index.html",
+        "docs:open": "node -e \"const c={darwin:'open',win32:'start'}[process.platform]||'xdg-open';require('child_process').execSync(c+' docs/index.html',{stdio:'inherit'})\"",
         "docs": "npm run docs:generate && npm run docs:open",
         "release": "npm publish --access public"
     },
