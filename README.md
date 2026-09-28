@@ -211,6 +211,12 @@ maestraClient.connect();
 
 Transcribe Secure Reliable Transport (SRT) streams:
 
+> The FFmpeg bundled with the SDK (`ffmpeg-static`) is built without SRT support. Install an FFmpeg with libsrt (e.g. `brew install ffmpeg`) and point the SDK at it before starting:
+>
+> ```bash
+> MAESTRA_FFMPEG_PATH=$(which ffmpeg) node your-app.js
+> ```
+
 ```javascript
 const { MaestraClient, SrtProcessor } = require('@maestra-ai/live-sdk');
 
