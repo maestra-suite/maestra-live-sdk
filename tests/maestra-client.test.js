@@ -201,20 +201,25 @@ test('frame with top-level language still delivers translation and disconnect', 
   }
 });
 
-test('FileProcessor reports audio duration on end', async () => {
+// Writes `seconds` of 16 kHz mono 16-bit silence to a temp WAV and returns its path.
+function silentWav(seconds, name) {
   const fs = require('fs');
   const os = require('os');
   const path = require('path');
-  const { FileProcessor } = require('..');
-  // 2 s of 16 kHz mono 16-bit silence
-  const data = Buffer.alloc(2 * 16000 * 2);
+  const data = Buffer.alloc(seconds * 16000 * 2);
   const header = Buffer.alloc(44);
   header.write('RIFF', 0); header.writeUInt32LE(36 + data.length, 4); header.write('WAVE', 8);
   header.write('fmt ', 12); header.writeUInt32LE(16, 16); header.writeUInt16LE(1, 20); header.writeUInt16LE(1, 22);
   header.writeUInt32LE(16000, 24); header.writeUInt32LE(32000, 28); header.writeUInt16LE(2, 32); header.writeUInt16LE(16, 34);
   header.write('data', 36); header.writeUInt32LE(data.length, 40);
-  const file = path.join(os.tmpdir(), `maestra-sdk-test-${process.pid}.wav`);
+  const file = path.join(os.tmpdir(), `maestra-sdk-${name}-${process.pid}.wav`);
   fs.writeFileSync(file, Buffer.concat([header, data]));
+  return file;
+}
+
+test('FileProcessor reports audio duration on end', async () => {
+  const { FileProcessor } = require('..');
+  const file = silentWav(2, 'duration');
   try {
     const ended = new Promise(resolve => {
       const p = new FileProcessor(file, { onEnd: resolve });
@@ -223,6 +228,30 @@ test('FileProcessor reports audio duration on end', async () => {
     const { durationSeconds } = await Promise.race([ended, new Promise((_, rej) => setTimeout(() => rej(new Error('no end')), 5000))]);
     assert.ok(Math.abs(durationSeconds - 2) < 0.05, `durationSeconds=${durationSeconds}`);
   } finally {
-    fs.unlinkSync(file);
+    require('fs').unlinkSync(file);
+  }
+});
+
+test('FfmpegProcessor stopped right after start leaves no FFmpeg running', async () => {
+  const { execSync } = require('child_process');
+  const { FfmpegProcessor } = require('..');
+  class RealtimeProcessor extends FfmpegProcessor {
+    _getInputOptions() { return ['-re']; }
+  }
+  const file = silentWav(3, 'stop');
+  const running = () => {
+    try { return execSync(`pgrep -f ${file}`).toString().trim().length > 0; } catch { return false; }
+  };
+  try {
+    let chunksAfterStop = 0, stopped = false;
+    const p = new RealtimeProcessor(file, { onAudio: () => { if (stopped) chunksAfterStop++; } });
+    p.start();
+    p.stop();
+    stopped = true;
+    await new Promise(r => setTimeout(r, 1500));
+    assert.strictEqual(running(), false, 'FFmpeg still running after stop()');
+    assert.strictEqual(chunksAfterStop, 0);
+  } finally {
+    require('fs').unlinkSync(file);
   }
 });
