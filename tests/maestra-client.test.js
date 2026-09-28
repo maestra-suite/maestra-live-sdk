@@ -200,3 +200,29 @@ test('frame with top-level language still delivers translation and disconnect', 
     c.stop(); wss.close();
   }
 });
+
+test('FileProcessor reports audio duration on end', async () => {
+  const fs = require('fs');
+  const os = require('os');
+  const path = require('path');
+  const { FileProcessor } = require('..');
+  // 2 s of 16 kHz mono 16-bit silence
+  const data = Buffer.alloc(2 * 16000 * 2);
+  const header = Buffer.alloc(44);
+  header.write('RIFF', 0); header.writeUInt32LE(36 + data.length, 4); header.write('WAVE', 8);
+  header.write('fmt ', 12); header.writeUInt32LE(16, 16); header.writeUInt16LE(1, 20); header.writeUInt16LE(1, 22);
+  header.writeUInt32LE(16000, 24); header.writeUInt32LE(32000, 28); header.writeUInt16LE(2, 32); header.writeUInt16LE(16, 34);
+  header.write('data', 36); header.writeUInt32LE(data.length, 40);
+  const file = path.join(os.tmpdir(), `maestra-sdk-test-${process.pid}.wav`);
+  fs.writeFileSync(file, Buffer.concat([header, data]));
+  try {
+    const ended = new Promise(resolve => {
+      const p = new FileProcessor(file, { onEnd: resolve });
+      p.start();
+    });
+    const { durationSeconds } = await Promise.race([ended, new Promise((_, rej) => setTimeout(() => rej(new Error('no end')), 5000))]);
+    assert.ok(Math.abs(durationSeconds - 2) < 0.05, `durationSeconds=${durationSeconds}`);
+  } finally {
+    fs.unlinkSync(file);
+  }
+});

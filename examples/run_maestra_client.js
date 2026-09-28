@@ -236,7 +236,9 @@ async function main() {
     console.log(`================================================\n`);
   });
 
+  let transcriptionStartedAt = Date.now();
   maestraClient.on('transcription-started', () => {
+    transcriptionStartedAt = Date.now();
     console.log('🔴 Transcription started. Listening for audio...');
   });
 
@@ -249,8 +251,11 @@ async function main() {
   };
 
   // Once the source is fully read, exit after the server output stops changing.
+  // Files are read faster than real time, so never exit before the audio's own duration has
+  // elapsed: a long silence in the file produces no output while the server is still working.
   const IDLE_EXIT_MS = 8000;
   let sourceEnded = false;
+  let audioDoneAt = 0;
   let idleTimer = null;
   const lastOutput = {};
   const onOutput = (kind, text) => {
@@ -258,6 +263,7 @@ async function main() {
     lastOutput[kind] = text;
     if (!sourceEnded) return;
     clearTimeout(idleTimer);
+    const delay = Math.max(audioDoneAt - Date.now(), 0) + IDLE_EXIT_MS;
     idleTimer = setTimeout(() => {
       if (!isTTY) {
         if (lastOutput['interim-transcription']) console.log(`👂 Original (interim): ${lastOutput['interim-transcription']}`);
@@ -267,11 +273,12 @@ async function main() {
       maestraClient.stop();
       rl.close();
       process.exit(0);
-    }, IDLE_EXIT_MS);
+    }, delay);
   };
 
-  maestraClient.on('source-ended', () => {
+  maestraClient.on('source-ended', ({ durationSeconds = 0 } = {}) => {
     sourceEnded = true;
+    audioDoneAt = transcriptionStartedAt + durationSeconds * 1000;
     onOutput('source', 'ended');
   });
 
