@@ -302,7 +302,9 @@ async function main() {
     console.log(`\n🌐 Translated: ${segment.text} [${segment.start}s -> ${segment.end}s]`);
   });
 
+  let hadError = false;
   maestraClient.on('error', (error) => {
+    hadError = true;
     console.error('\n❌ An error occurred:', error.message || error);
     console.error('📋 Error details:', error);
   });
@@ -315,6 +317,8 @@ async function main() {
 
   maestraClient.on('transcription-stopped', () => {
     console.log('\n⏹️ Transcription stopped.');
+    rl.close();
+    process.exit(hadError ? 1 : 0);
   });
   
   // --- Start Connection ---
