@@ -183,3 +183,20 @@ test('language-detected from finalized segment language', async () => {
   c.connect(); await once(c, 'ready'); await new Promise(r => setTimeout(r, 200)); c.stop(); wss.close();
   assert.deepStrictEqual(got, ['en']); assert.deepStrictEqual(finals, ['hi', 'again']);
 });
+
+test('frame with top-level language still delivers translation and disconnect', async () => {
+  const { wss, port } = await fakeServer(ws => {
+    ws.send(JSON.stringify({ message: 'SERVER_READY' }));
+    ws.send(JSON.stringify({ language: 'de', translated_segment: { text: 'hallo' } }));
+    ws.send(JSON.stringify({ language: 'de', message: 'DISCONNECT' }));
+  });
+  const c = client(port, { sourceLanguage: 'en' });
+  const translations = []; c.on('finalized-translation', s => translations.push(s.text));
+  c.connect();
+  try {
+    await once(c, 'disconnect');
+    assert.deepStrictEqual(translations, ['hallo']);
+  } finally {
+    c.stop(); wss.close();
+  }
+});
