@@ -391,7 +391,7 @@ body::before {
     display: flex;
     gap: 0;
     padding: 3px;
-    margin-bottom: var(--largeGapSize);
+    margin-bottom: var(--mediumGapSize);
     background-color: var(--cBackgroundEl1);
     border: 1px solid var(--cPrimaryBorder);
     border-radius: var(--fullRadius);
@@ -625,7 +625,6 @@ body::before {
 
     .audio-source-tabs {
         flex-wrap: wrap;
-        border-radius: var(--mediumRadius);
     }
 
     .transcript-container.has-translation {
