@@ -10,7 +10,7 @@ A comprehensive command-line interface for the Maestra SDK that supports multipl
 
 - **Multiple Audio Sources**: Microphone, local files, HLS, RTMP/S, RTSP, and SRT streams
 - **Real-time Transcription**: Live speech-to-text with interim and finalized results
-- **Translation Support**: Real-time translation to 95+ supported languages
+- **Translation Support**: Real-time translation to any supported target language
 - **Language Detection**: Automatic source language detection
 - **Dashboard Integration**: Save transcriptions to your Maestra dashboard
 - **Flexible Configuration**: Support for custom servers and connection settings
@@ -18,16 +18,13 @@ A comprehensive command-line interface for the Maestra SDK that supports multipl
 
 ### Prerequisites
 
-1. **Node.js**: Version 14 or higher
+1. **Node.js**: `^20.19.0 || ^22.12.0 || >=23`
 2. **Maestra API Key**: Get your API key from the Maestra dashboard
-3. **SDK Dependencies**: Install the required packages
+3. **SoX** (macOS/Windows, e.g. `brew install sox`) or **alsa-utils** (Linux) for microphone input
+4. **Dependencies**: The examples use the SDK from this repository. Install from the repository root and run the commands below from there:
 
 ```bash
-# Install SDK dependencies
 npm install
-
-# Or if using globally
-npm install -g @maestra-ai/maestra-client-sdk
 ```
 
 ### Basic Usage
@@ -94,22 +91,22 @@ node examples/run_maestra_client.js --apikey YOUR_API_KEY --srt_url "srt://local
 
 **English to French:**
 ```bash
-node examples/run_maestra_client.js --apikey YOUR_API_KEY --sourceLanguage en --targetLanguage fr --translationEnabled true
+node examples/run_maestra_client.js --apikey YOUR_API_KEY --sourceLanguage en --targetLanguage fr
 ```
 
 **Auto-detect to Spanish:**
 ```bash
-node examples/run_maestra_client.js --apikey YOUR_API_KEY --sourceLanguage auto --targetLanguage es --translationEnabled true
+node examples/run_maestra_client.js --apikey YOUR_API_KEY --sourceLanguage auto --targetLanguage es
 ```
 
 **Japanese to English (with file):**
 ```bash
-node examples/run_maestra_client.js --apikey YOUR_API_KEY --file audio.wav --sourceLanguage ja --targetLanguage en --translationEnabled true
+node examples/run_maestra_client.js --apikey YOUR_API_KEY --file audio.wav --sourceLanguage ja --targetLanguage en
 ```
 
 **German to English (with HLS stream):**
 ```bash
-node examples/run_maestra_client.js --apikey YOUR_API_KEY --hls_url https://german-stream.com/live.m3u8 --sourceLanguage de --targetLanguage en --translationEnabled true
+node examples/run_maestra_client.js --apikey YOUR_API_KEY --hls_url https://german-stream.com/live.m3u8 --sourceLanguage de --targetLanguage en
 ```
 
 ### Advanced Configuration
@@ -119,7 +116,7 @@ node examples/run_maestra_client.js --apikey YOUR_API_KEY --hls_url https://germ
 Save your transcription session to the Maestra dashboard:
 
 ```bash
-node examples/run_maestra_client.js --apikey YOUR_API_KEY --sourceLanguage en --targetLanguage fr --translationEnabled true --saveToDashboard true
+node examples/run_maestra_client.js --apikey YOUR_API_KEY --sourceLanguage en --targetLanguage fr --saveToDashboard true
 ```
 
 #### Custom Server Configuration
@@ -128,7 +125,7 @@ Connect to a local or custom Maestra server:
 
 ```bash
 # Local development server
-node examples/run_maestra_client.js --apikey YOUR_API_KEY --host localhost --port 9091 --secure false
+node examples/run_maestra_client.js --apikey YOUR_API_KEY --host localhost --port 9090 --secure false
 
 # Custom server with SSL
 node examples/run_maestra_client.js --apikey YOUR_API_KEY --host custom.example.com --port 443 --secure true
@@ -142,7 +139,6 @@ node examples/run_maestra_client.js \
   --file "conference-call.mp4" \
   --sourceLanguage auto \
   --targetLanguage en \
-  --translationEnabled true \
   --saveToDashboard true \
   --host maestra-live.maestra.ai \
   --port 443 \
@@ -153,11 +149,10 @@ node examples/run_maestra_client.js \
 
 | Option | Alias | Type | Description | Required | Default |
 |--------|-------|------|-------------|----------|---------|
-| `--apikey` | `-ak` | string | Maestra API key for authentication | ✅ Yes | - |
-| `--translationEnabled` | `-te` | boolean | Enable real-time translation | ✅ Yes | - |
-| `--sourceLanguage` | `-sl` | string | Source language ('auto', 'en', 'fr', etc.) | No | Auto-detect |
-| `--targetLanguage` | `-tl` | string | Target language for translation | No | - |
-| `--saveToDashboard` | `-sd` | boolean | Save transcription to dashboard | No | `false` |
+| `--apikey` | `--ak` | string | Maestra API key for authentication | ✅ Yes | - |
+| `--sourceLanguage` | `--sl` | string | Source language ('auto', 'en', 'fr', etc.) | No | Auto-detect |
+| `--targetLanguage` | `--tl` | string | Target language; enables translation when set | No | - |
+| `--saveToDashboard` | `--sd` | boolean | Save transcription to dashboard | No | `false` |
 | `--file` | - | string | Local audio/video file path | No | - |
 | `--hls_url` | - | string | HLS stream URL | No | - |
 | `--rtmps_url` | - | string | RTMP/S stream URL | No | - |
@@ -189,60 +184,37 @@ node examples/run_maestra_client.js \
 **Special values:**
 - `auto` - Automatic language detection
 
-> **Note**: Use `auto` for the source language to enable automatic detection. The system supports 95+ languages for both transcription and translation.
+> **Note**: Use `auto` (or omit `--sourceLanguage`) for automatic detection. See the [main README](../README.md#language-configuration) for the full list of language codes.
+
+> **Note**: Multi-letter aliases need a double dash (`--ak`, `--sl`, `--tl`, `--sd`); `-ak` is parsed as two separate flags.
 
 ### Output Format
 
-The CLI provides real-time feedback with detailed information:
+The CLI prints the configuration, connection progress and results as they arrive:
 
 ```
+Initializing Maestra Client...
 📋 Client Configuration:
-   🔑 API Key: sk-1234...
+   🔑 API Key: YOUR_API...
    🌐 Host: maestra-live.maestra.ai
    🔌 Port: 443
    🔒 Secure: true
 🗣️  Source language set to: auto
 🌐 Target language set to: fr
-🌐 Translation enabled
-💾 Will save transcription to dashboard after session
-
-Initializing Maestra Client...
-Attempting to connect to the server...
+💾 Will save transcription to dashboard
+🔄 Attempting to connect to the server...
+📍 Connecting to: wss://maestra-live.maestra.ai:443
 ✅ Client is ready and connected to the server.
-
-================================================
-   LANGUAGE DETECTED: ENGLISH   
-================================================
-
-🔴 Transcription started. Listening for audio...
-👂 Original: Hello everyone welcome to today's meeting
-🌐 Translating: Bonjour tout le monde, bienvenue à la réunion d'aujourd'hui
-✅ Original: Hello everyone, welcome to today's meeting [0.5s -> 2.8s]
-✅ Translated: Bonjour tout le monde, bienvenue à la réunion d'aujourd'hui [0.5s -> 2.8s]
 ```
+
+Detected languages, interim results and finalized transcription/translation segments follow as the audio is processed.
 
 ### Error Handling
 
-The CLI includes comprehensive error handling:
+Errors reported by the SDK are printed with their message, for example an invalid API key:
 
-**Authentication errors:**
 ```
-❌ Authentication failed. Please check your API key.
-```
-
-**Connection errors:**
-```
-❌ Failed to connect to server. Please check your network connection.
-```
-
-**Audio source errors:**
-```
-❌ Failed to process audio source. Please verify the file path or stream URL.
-```
-
-**Language errors:**
-```
-❌ Unsupported language code. Please use a valid language code or 'auto'.
+❌ An error occurred: Connection failed: Authentication error. Please check your API key and ensure it is valid and has the necessary permissions.
 ```
 
 ### Integration Examples
@@ -283,7 +255,7 @@ For local development with a Maestra development server:
 node examples/run_maestra_client.js \
   --apikey YOUR_DEV_API_KEY \
   --host localhost \
-  --port 5901 \
+  --port 9090 \
   --secure false \
   --sourceLanguage en
 ```
