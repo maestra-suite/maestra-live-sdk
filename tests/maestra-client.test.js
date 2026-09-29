@@ -53,6 +53,26 @@ test('useVad is forwarded, defaults to true', async () => {
   assert.deepStrictEqual(seen, [false, true]);
 });
 
+test('getTranscriptionData collects received segments', async () => {
+  const { wss, port } = await fakeServer(ws => {
+    ws.send(JSON.stringify({ message: 'SERVER_READY' }));
+    ws.send(JSON.stringify({ segments: [{ text: 'old', completed: false }] }));
+    ws.send(JSON.stringify({ segments: [{ text: 'new', completed: false }] }));
+    ws.send(JSON.stringify({ translated_segments: [{ text: 'tnew' }] }));
+    ws.send(JSON.stringify({ segment: { text: 'f1' } }));
+    ws.send(JSON.stringify({ segment: { text: 'f2' } }));
+    ws.send(JSON.stringify({ translated_segment: { text: 'tf1' } }));
+  });
+  const c = client(port);
+  c.connect(); await once(c, 'ready');
+  await new Promise(r => setTimeout(r, 300)); c.stop(); wss.close();
+  const d = c.getTranscriptionData();
+  assert.deepStrictEqual(d.interimTranscription.map(s => s.text), ['new']);
+  assert.deepStrictEqual(d.interimTranslation.map(s => s.text), ['tnew']);
+  assert.deepStrictEqual(d.finalizedTranscription.map(s => s.text), ['f1', 'f2']);
+  assert.deepStrictEqual(d.finalizedTranslation.map(s => s.text), ['tf1']);
+});
+
 test('server messages map to events', async () => {
   const { wss, port } = await fakeServer(ws => {
     ws.send(JSON.stringify({ message: 'SERVER_READY' }));
