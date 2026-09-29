@@ -95,7 +95,7 @@ async function main() {
     })
     .option('secure', {
       type: 'boolean',
-      description: 'Use a secure (WSS) connection. Defaults to false.'
+      description: 'Use a secure (WSS) connection. Defaults to true.'
     })
     .option('sourceLanguage', {
       alias: 'sl',
@@ -150,10 +150,6 @@ async function main() {
   if (argv.saveToDashboard !== undefined) {
     clientConfig.saveToDashboard = argv.saveToDashboard;
     console.log(`💾 Will ${argv.saveToDashboard ? 'save' : 'not save'} transcription to dashboard`);
-  }
-  if (argv.translationEnabled !== undefined) {
-    clientConfig.translationEnabled = argv.translationEnabled;
-    console.log(`🌐 Translation ${argv.translationEnabled ? 'enabled' : 'disabled'}`);
   }
 
   const maestraClient = new MaestraClient(clientConfig);
