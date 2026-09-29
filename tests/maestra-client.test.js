@@ -43,6 +43,16 @@ test('no targetLanguage -> translation disabled, no language keys', async () => 
   assert.ok(!('targetLanguage' in got) && !('sourceLanguage' in got));
 });
 
+test('useVad is forwarded, defaults to true', async () => {
+  const seen = [];
+  const { wss, port } = await fakeServer((ws, cfg) => { seen.push(cfg.use_vad); ws.send(JSON.stringify({ message: 'SERVER_READY' })); });
+  for (const extra of [{ useVad: false }, {}]) {
+    const c = client(port, extra); c.connect(); await once(c, 'ready'); c.stop();
+  }
+  wss.close();
+  assert.deepStrictEqual(seen, [false, true]);
+});
+
 test('server messages map to events', async () => {
   const { wss, port } = await fakeServer(ws => {
     ws.send(JSON.stringify({ message: 'SERVER_READY' }));
