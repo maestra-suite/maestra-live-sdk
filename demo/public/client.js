@@ -143,9 +143,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (voiceId && !translationEnabled) {
             enableTranslationCheckbox.checked = true;
             translationEnabled = true;
-            targetLanguageGroup.style.display = 'block';
-            voiceIdGroup.style.display = 'block';
-            autoVoiceCloningGroup.style.display = 'block';
+            targetLanguageGroup.style.display = 'flex';
+            voiceIdGroup.style.display = 'flex';
+            autoVoiceCloningGroup.style.display = 'flex';
             logStatus('Translation automatically enabled for voice-over.');
         }
         
@@ -164,9 +164,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (autoVoiceCloning && !translationEnabled) {
             enableTranslationCheckbox.checked = true;
             translationEnabled = true;
-            targetLanguageGroup.style.display = 'block';
-            voiceIdGroup.style.display = 'block';
-            autoVoiceCloningGroup.style.display = 'block';
+            targetLanguageGroup.style.display = 'flex';
+            voiceIdGroup.style.display = 'flex';
+            autoVoiceCloningGroup.style.display = 'flex';
             logStatus('Translation automatically enabled for voice cloning. Your voice will be cloned automatically.');
         }
         
@@ -231,7 +231,7 @@ document.addEventListener('DOMContentLoaded', () => {
         newSessionButton.style.display = 'none';
         restartButton.style.display = 'inline-flex';
         stopButton.style.display = 'inline-flex';
-        languageSelector.style.display = 'block';
+        languageSelector.style.display = 'flex';
         
         updateLanguageSelector();
         updateTranscriptionUI();
