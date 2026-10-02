@@ -1,6 +1,6 @@
 {
     "name": "@maestra-ai/live-sdk",
-    "version": "1.0.2",
+    "version": "1.1.0",
     "description": "Live SDK for Maestra AI transcription services",
     "main": "index.js",
     "files": [
