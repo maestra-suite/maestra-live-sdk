@@ -124,7 +124,8 @@ wss.on('connection', (ws) => {
             maestraClient.on('ready', () => {
               clearConnectionTimeout();
               console.log(`[${connectionId}] Maestra client is ready.`);
-              console.log(`[${connectionId}] Config: ${JSON.stringify(data.config)}`);
+              const { apiKey, ...loggableConfig } = data.config;
+              console.log(`[${connectionId}] Config: ${JSON.stringify(loggableConfig)}`);
               ws.send(JSON.stringify({ type: 'status', message: 'Connected to Maestra, starting transcription.' }));
               maestraClient.transcribe(processor);
               ws.send(JSON.stringify({ type: 'server-ready' }));
@@ -152,10 +153,8 @@ wss.on('connection', (ws) => {
     } catch (e) {
       // If JSON.parse fails, it must be a binary audio packet
       if (message instanceof Buffer) {
-        console.log(`[${connectionId}] Received audio buffer: ${message.length} bytes`);
         if (maestraClient && maestraClient.streamProcessor instanceof StreamInputProcessor) {
           maestraClient.streamProcessor.pushAudio(message);
-          console.log(`[${connectionId}] Forwarded audio to processor`);
         } else {
           console.warn(`[${connectionId}] No processor available for audio`);
         }

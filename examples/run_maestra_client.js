@@ -95,7 +95,7 @@ async function main() {
     })
     .option('secure', {
       type: 'boolean',
-      description: 'Use a secure (WSS) connection. Defaults to false.'
+      description: 'Use a secure (WSS) connection. Defaults to true.'
     })
     .option('sourceLanguage', {
       alias: 'sl',
@@ -150,10 +150,6 @@ async function main() {
   if (argv.saveToDashboard !== undefined) {
     clientConfig.saveToDashboard = argv.saveToDashboard;
     console.log(`💾 Will ${argv.saveToDashboard ? 'save' : 'not save'} transcription to dashboard`);
-  }
-  if (argv.translationEnabled !== undefined) {
-    clientConfig.translationEnabled = argv.translationEnabled;
-    console.log(`🌐 Translation ${argv.translationEnabled ? 'enabled' : 'disabled'}`);
   }
 
   const maestraClient = new MaestraClient(clientConfig);
@@ -236,38 +232,82 @@ async function main() {
     console.log(`================================================\n`);
   });
 
+  let transcriptionStartedAt = Date.now();
   maestraClient.on('transcription-started', () => {
+    transcriptionStartedAt = Date.now();
     console.log('🔴 Transcription started. Listening for audio...');
+  });
+
+  const isTTY = process.stdout.isTTY;
+  const resetLine = (dir = 0) => {
+    if (isTTY) {
+      process.stdout.clearLine(dir);
+      process.stdout.cursorTo(0);
+    }
+  };
+
+  // Once the source is fully read, exit after the server output stops changing.
+  // Files are read faster than real time, so never exit before the audio's own duration has
+  // elapsed: a long silence in the file produces no output while the server is still working.
+  const IDLE_EXIT_MS = 8000;
+  let sourceEnded = false;
+  let audioDoneAt = 0;
+  let idleTimer = null;
+  const lastOutput = {};
+  const onOutput = (kind, text) => {
+    if (lastOutput[kind] === text) return;
+    lastOutput[kind] = text;
+    if (!sourceEnded) return;
+    clearTimeout(idleTimer);
+    const delay = Math.max(audioDoneAt - Date.now(), 0) + IDLE_EXIT_MS;
+    idleTimer = setTimeout(() => {
+      if (!isTTY) {
+        if (lastOutput['interim-transcription']) console.log(`👂 Original (interim): ${lastOutput['interim-transcription']}`);
+        if (lastOutput['interim-translation']) console.log(`🌐 Translation (interim): ${lastOutput['interim-translation']}`);
+      }
+      console.log('\n🏁 Source finished and no new results. Exiting.');
+      maestraClient.stop();
+      rl.close();
+      process.exit(0);
+    }, delay);
+  };
+
+  maestraClient.on('source-ended', ({ durationSeconds = 0 } = {}) => {
+    sourceEnded = true;
+    audioDoneAt = transcriptionStartedAt + durationSeconds * 1000;
+    onOutput('source', 'ended');
   });
 
   maestraClient.on('interim-transcription', (segments) => {
     const text = segments.map(s => s.text).join(' ');
-    process.stdout.write(`\r👂 Original: ${text}`);
+    onOutput('interim-transcription', text);
+    if (isTTY) process.stdout.write(`\r👂 Original: ${text}`);
   });
 
   maestraClient.on('finalized-transcription', (segment) => {
-    process.stdout.clearLine(0);
-    process.stdout.cursorTo(0);
-    const message = `✅ Original: ${segment.text} [${segment.start}s -> ${segment.end}s]`;
-    console.log(message);
+    onOutput('finalized-transcription', segment.text);
+    resetLine();
+    console.log(`✅ Original: ${segment.text} [${segment.start}s -> ${segment.end}s]`);
   });
 
   maestraClient.on('interim-translation', (segments) => {
     const text = segments.map(s => s.text).join(' ');
-    // Move to the next line to print translation below the original
-    process.stdout.clearLine(1);
-    process.stdout.cursorTo(0);
-    process.stdout.write(`\r🌐 Translation: ${text}`);
+    onOutput('interim-translation', text);
+    if (isTTY) {
+      resetLine(1);
+      process.stdout.write(`\r🌐 Translation: ${text}`);
+    }
   });
 
   maestraClient.on('finalized-translation', (segment) => {
-    process.stdout.clearLine(1);
-    process.stdout.cursorTo(0);
-    const message = `\n🌐 Translated: ${segment.text} [${segment.start}s -> ${segment.end}s]`;
-    console.log(message);
+    onOutput('finalized-translation', segment.text);
+    resetLine(1);
+    console.log(`\n🌐 Translated: ${segment.text} [${segment.start}s -> ${segment.end}s]`);
   });
 
+  let hadError = false;
   maestraClient.on('error', (error) => {
+    hadError = true;
     console.error('\n❌ An error occurred:', error.message || error);
     console.error('📋 Error details:', error);
   });
@@ -280,6 +320,8 @@ async function main() {
 
   maestraClient.on('transcription-stopped', () => {
     console.log('\n⏹️ Transcription stopped.');
+    rl.close();
+    process.exit(hadError ? 1 : 0);
   });
   
   // --- Start Connection ---

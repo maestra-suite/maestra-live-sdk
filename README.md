@@ -8,19 +8,22 @@ A Node.js live SDK for connecting to Maestra's real-time transcription and trans
 npm install @maestra-ai/live-sdk
 ```
 
+## Requirements
+
+- **Node.js** `^20.19.0 || ^22.12.0 || >=23`
+- **FFmpeg**: bundled via `ffmpeg-static`; set `MAESTRA_FFMPEG_PATH` to use your own binary (required for SRT)
+- **SoX** (macOS/Windows, e.g. `brew install sox`) or **alsa-utils** (Linux) for `MicrophoneProcessor`
+
 ## 📦 What's Included
 
 **In the npm package:**
 - Core SDK library (`lib/` folder)
-- README and license files
-- TypeScript definitions
+- Generated API docs (`docs/`)
+- README, changelog and license files
 
-**Available separately from Maestra:**
-- **Web Demo** - Production-ready web interface with modern UI
-- **CLI Examples** - Command-line usage examples and scripts
-- **Complete Documentation** - Comprehensive guides and tutorials
-
-> The npm package contains only the essential SDK files to keep it lightweight. Demos and examples are available for download from Maestra.
+**In the [GitHub repository](https://github.com/maestra-suite/maestra-live-sdk) only:**
+- **Web Demo** (`demo/`) - Browser interface for all audio sources
+- **CLI Examples** (`examples/`) - Command-line client and vMix integration
 
 ## Quick Start: Transcribing from the Microphone
 
@@ -84,11 +87,11 @@ maestraClient.on('finalized-translation', (segment) => {
 });
 
 maestraClient.on('error', (error) => {
-  console.error('\\n❌ An error occurred:', error.message);
+  console.error('\n❌ An error occurred:', error.message);
 });
 
 maestraClient.on('disconnect', () => {
-  console.log('\\n🔌 Client disconnected.');
+  console.log('\n🔌 Client disconnected.');
 });
 
 // 3. Connect to the server
@@ -211,6 +214,12 @@ maestraClient.connect();
 
 Transcribe Secure Reliable Transport (SRT) streams:
 
+> The FFmpeg bundled with the SDK (`ffmpeg-static`) is built without SRT support. Install an FFmpeg with libsrt (e.g. `brew install ffmpeg`) and point the SDK at it before starting:
+>
+> ```bash
+> MAESTRA_FFMPEG_PATH=$(which ffmpeg) node your-app.js
+> ```
+
 ```javascript
 const { MaestraClient, SrtProcessor } = require('@maestra-ai/live-sdk');
 
@@ -291,9 +300,9 @@ maestraClient.on('finalized-transcription', (segment) => {
   console.log('Finalized:', segment.text);
 });
 
-maestraClient.on('interim-transcription', (segment) => {
-  if (segment.text) {
-    console.log('Interim:', segment.text);
+maestraClient.on('interim-transcription', (segments) => {
+  if (segments && segments.length > 0) {
+    console.log('Interim:', segments.map(s => s.text).join(' '));
   }
 });
 
@@ -301,9 +310,9 @@ maestraClient.on('finalized-translation', (segment) => {
   console.log('Translated:', segment.text);
 });
 
-maestraClient.on('interim-translation', (segment) => {
-  if (segment.text) {
-    console.log('Translating:', segment.text);
+maestraClient.on('interim-translation', (segments) => {
+  if (segments && segments.length > 0) {
+    console.log('Translating:', segments.map(s => s.text).join(' '));
   }
 });
 
@@ -347,7 +356,7 @@ process.on('SIGINT', () => {
 
 ## 🎵 Voiceover Audio Playback
 
-When a `voiceId` is provided, the SDK automatically enables TTS (Text-to-Speech) and plays audio received from the server. No additional configuration is needed!
+When a `voiceId` is provided, the SDK enables TTS (Text-to-Speech) voiceover. In a browser, received audio is played automatically. In Node.js, the SDK does not play audio; it emits `voiceover-url` with the audio URL so you can handle playback yourself.
 
 ## 🎭 Automatic Voice Cloning
 
@@ -561,7 +570,7 @@ const client = new MaestraClient({
 });
 
 // ✅ Legacy way (still works)
-const client = new MaestraClient({
+const legacyClient = new MaestraClient({
   language: 'en',           // Will be treated as sourceLanguage
   targetLanguage: 'fr'
 });
@@ -570,7 +579,7 @@ const client = new MaestraClient({
 **⚠️ Breaking Change Notice:**
 - `voiceOverEnabled: true` has been replaced with `voiceId: 'VoiceIdString'`
 - Providing a `voiceId` automatically enables voiceover functionality
-- The old `voiceOverEnabled` parameter is deprecated but still supported for backward compatibility
+- The old `voiceOverEnabled` parameter is no longer supported and is ignored
 
 ## API Overview
 
@@ -590,6 +599,7 @@ The main client for interacting with the Maestra API.
 *   `voiceId` (string): Voice ID for TTS voiceover (automatically enables voiceover when provided)
 *   `autoVoiceCloning` (boolean): Enable automatic voice cloning (default: false)
 *   `useVad` (boolean): Use voice activity detection (default: true)
+*   `connectionTimeout` (number): Milliseconds to wait for the server to become ready (default: 10000)
 
 **Events:**
 
@@ -599,6 +609,11 @@ The main client for interacting with the Maestra API.
 *   `interim-translation`: Provides in-progress translation results.
 *   `finalized-translation`: Provides finalized translation segments.
 *   `language-detected`: Fired when source language is auto-detected.
+*   `transcription-started`: Fired when an audio processor starts streaming.
+*   `transcription-stopped`: Fired when transcription is stopped.
+*   `source-ended`: Fired when the audio source (e.g. a file) finishes.
+*   `finalized-segment-audio-url`: Provides the TTS audio URL for a finalized segment (when `voiceId` is set).
+*   `voiceover-play`, `voiceover-ended`, `voiceover-error`, `voiceover-autoplay-blocked`, `voiceover-url`: See [Voiceover Events](#voiceover-events).
 *   `error`: Fired when an error occurs.
 *   `disconnect`: Fired when the client disconnects from the server.
 
@@ -616,41 +631,30 @@ This SDK includes several processors for handling different audio sources:
 
 ## CLI Examples
 
-Command-line examples are available from Maestra for quick testing and integration:
-
-> **Note**: CLI examples are not included in the npm package but are available as separate downloads from Maestra.
+A command-line client is available in the `examples/` folder of the [GitHub repository](https://github.com/maestra-suite/maestra-live-sdk) (not included in the npm package). Run it from the repository root:
 
 ```bash
-# Download CLI examples from Maestra
-# Extract to your preferred location
-cd maestra-client-sdk/examples
-
-# Install dependencies
+git clone https://github.com/maestra-suite/maestra-live-sdk.git
+cd maestra-live-sdk
 npm install
 
-# Run CLI examples (transcription only)
-node run_maestra_client.js --apiKey YOUR_API_KEY
+# Microphone transcription
+node examples/run_maestra_client.js --apikey YOUR_API_KEY
 
-# File transcription  
-node run_maestra_client.js --apiKey YOUR_API_KEY --file path/to/audio.wav
+# File transcription
+node examples/run_maestra_client.js --apikey YOUR_API_KEY --file path/to/audio.wav
 
 # Stream transcription
-node run_maestra_client.js --apiKey YOUR_API_KEY --hls_url http://example.com/stream.m3u8
+node examples/run_maestra_client.js --apikey YOUR_API_KEY --hls_url http://example.com/stream.m3u8
 
-# With language configuration (transcription only)
-node run_maestra_client.js --apiKey YOUR_API_KEY --sourceLanguage en
+# With a specific source language
+node examples/run_maestra_client.js --apikey YOUR_API_KEY --sourceLanguage en
 
-# Enable translation from English to French (translation automatically enabled)
-node run_maestra_client.js --apiKey YOUR_API_KEY --sourceLanguage en --targetLanguage fr
+# Translate English to French (translation is enabled by --targetLanguage)
+node examples/run_maestra_client.js --apikey YOUR_API_KEY --sourceLanguage en --targetLanguage fr
 
-# Auto-detect source language and translate to Spanish (translation automatically enabled)
-node run_maestra_client.js --apiKey YOUR_API_KEY --sourceLanguage auto --targetLanguage es
-
-# Transcribe French audio and save to dashboard (no translation)
-node run_maestra_client.js --apiKey YOUR_API_KEY --sourceLanguage fr --saveToDashboard true
-
-# Enable translation with all features (translation automatically enabled)
-node run_maestra_client.js --apiKey YOUR_API_KEY --sourceLanguage auto --targetLanguage es --saveToDashboard
+# Auto-detect the source language and translate to Spanish, saving to the dashboard
+node examples/run_maestra_client.js --apikey YOUR_API_KEY --sourceLanguage auto --targetLanguage es --saveToDashboard
 ```
 
-For complete CLI documentation and usage instructions, contact Maestra for the examples package.
+See [examples/README.md](examples/README.md) for all options.

@@ -11,34 +11,29 @@ A comprehensive web-based demonstration of the Maestra SDK capabilities, showcas
 - **Language Detection**: Automatic source language detection when auto-detect is enabled
 - **Dashboard Integration**: Save transcription sessions to your Maestra dashboard
 - **Flexible Results Display**: Choose between interim and final results only
-- **Modern UI**: Clean, responsive interface with tabbed navigation
+- **Modern UI**: Clean, responsive interface matching the Maestra captioner design
 
 ## Quick Start
 
 ### Prerequisites
 
-- Node.js (v14 or higher)
+- Node.js `^20.19.0 || ^22.12.0 || >=23`
 - Valid Maestra API key
 - Access to Maestra production server (maestra-live.maestra.ai) or local development server
 
 ### Installation
 
-1. Navigate to the demo directory:
-```bash
-cd maestra-client-sdk/demo
-```
-
-2. Install dependencies:
+1. From the repository root, install dependencies (the demo uses the SDK from this repository and has no `package.json` of its own):
 ```bash
 npm install
 ```
 
-3. Start the demo server:
+2. Start the demo server:
 ```bash
-node server.js
+node demo/server.js
 ```
 
-4. Open your browser and navigate to:
+3. Open your browser and navigate to:
 ```
 http://localhost:3000
 ```
@@ -49,7 +44,7 @@ http://localhost:3000
 
 ### Authentication and Configuration
 
-1. **API Key**: Enter your Maestra API key in the "API Key" field
+1. **API Key**: Enter your Maestra API key in the "API Key" field (the Start button stays disabled until a key is entered)
 2. **Source Language**:
    - Choose "Auto-detect" for automatic language detection
    - Or select a specific language if you know the audio language
@@ -64,7 +59,7 @@ http://localhost:3000
 ### Audio Sources
 
 #### Microphone
-- Click "Start Transcription" to begin capturing from your microphone
+- Click "Start" to begin capturing from your microphone
 - Grant microphone permissions when prompted
 
 #### HLS Streams
@@ -140,7 +135,7 @@ ffmpeg -stream_loop -1 -re -i your-audio-file.wav -c:a aac -b:a 128k -f mpegts s
 
 ### Transcription Output
 - **Original Transcription**: Shows transcribed text in source language
-- **Translation**: Shows English translation when enabled
+- **Translation**: Shows the translation in the selected target language when enabled
 - **Interim Results**: Real-time partial results (can be toggled)
 
 ## Technical Details
@@ -151,9 +146,9 @@ ffmpeg -stream_loop -1 -re -i your-audio-file.wav -c:a aac -b:a 128k -f mpegts s
 - Fallback to ScriptProcessorNode for older browsers
 
 ### WebSocket Communication
-- Real-time bidirectional communication with Maestra servers
-- Automatic reconnection handling
+- The browser streams audio to the demo server, which forwards it to Maestra through the SDK
 - Binary audio data transmission
+- Connection errors (e.g. an invalid API key) are shown in the status message
 
 ### Supported Formats
 - **Audio Codecs**: AAC, MP3, WAV, FLAC

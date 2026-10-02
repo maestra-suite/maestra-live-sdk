@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0] - 2026-10-02
+### Added
+- **`source-ended` event**: Emitted when a file/stream source is fully read, with `{ durationSeconds }` of audio produced.
+- **`MAESTRA_FFMPEG_PATH`**: Use a custom FFmpeg binary (e.g. for SRT, which the bundled build lacks).
+- **`useVad` option**: Now forwarded to the server.
+- **Client identification**: The SDK reports `clientType: 'sdk'`, its version and a `User-Agent` header when connecting.
+
+### Changed
+- **Node.js requirement**: Now requires Node `^20.19.0 || ^22.12.0 || >=23`.
+- **Processor errors stop the session**: A fatal audio processor error now also stops the client, so the server stops streaming.
+- **`language-detected`**: Now fires whenever auto-detection reports a new language (previously never fired). The detected language no longer overwrites `sourceLanguage`.
+- **Dependencies**: Removed unused `firebase` and `wavefile`; `express` and `yargs` are now dev-only (demo/examples).
+
+### Fixed
+- `getTranscriptionData()` now returns the received segments.
+- FFmpeg is killed when `stop()` races its startup, and an intentional stop is no longer reported as an error.
+- Missing SoX for microphone capture now produces a clear error.
+- CLI example exits once a file is fully transcribed and works with non-TTY output.
+
 ## [0.1.4] - 2025-09-26
 ### Added
 - **Auto Voice Cloning**: Now when this parameter is enabled, voiceover feature will work with your own voice.

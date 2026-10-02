@@ -1,6 +1,6 @@
 {
     "name": "@maestra-ai/live-sdk",
-    "version": "1.0.2",
+    "version": "1.1.0",
     "description": "Live SDK for Maestra AI transcription services",
     "main": "index.js",
     "files": [
@@ -20,13 +20,13 @@
         "CHANGELOG.md"
     ],
     "repository": {
-    "type": "git",
-    "url": "https://github.com/maestra-suite/maestra-live-sdk.git"
+        "type": "git",
+        "url": "https://github.com/maestra-suite/maestra-live-sdk.git"
     },
     "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1",
+        "test": "node --test tests/*.test.js",
         "docs:generate": "jsdoc -c jsdoc.json",
-        "docs:open": "start docs/index.html",
+        "docs:open": "node -e \"const c={darwin:'open',win32:'start'}[process.platform]||'xdg-open';require('child_process').execSync(c+' docs/index.html',{stdio:'inherit'})\"",
         "docs": "npm run docs:generate && npm run docs:open",
         "release": "npm publish --access public"
     },
@@ -42,23 +42,21 @@
     ],
     "dependencies": {
         "@alexanderolsen/libsamplerate-js": "^2.1.2",
-        "express": "^4.18.2",
         "ffmpeg-static": "^5.2.0",
-        "firebase": "^11.9.1",
         "fluent-ffmpeg": "^2.1.3",
         "node-fetch": "^2.6.9",
         "node-microphone": "^0.1.6",
         "uuid": "^9.0.0",
-        "wavefile": "^11.0.0",
         "ws": "^8.14.2",
-        "xml2js": "^0.6.2",
-        "yargs": "^18.0.0"
+        "xml2js": "^0.6.2"
     },
     "engines": {
-        "node": ">=14.0.0"
+        "node": "^20.19.0 || ^22.12.0 || >=23"
     },
     "license": "MIT",
     "devDependencies": {
-        "jsdoc": "^4.0.4"
+        "express": "^4.18.2",
+        "jsdoc": "^4.0.4",
+        "yargs": "^18.0.0"
     }
 }
