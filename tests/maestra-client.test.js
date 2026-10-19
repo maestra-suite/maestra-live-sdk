@@ -43,6 +43,59 @@ test('no targetLanguage -> translation disabled, no language keys', async () => 
   assert.ok(!('targetLanguage' in got) && !('sourceLanguage' in got));
 });
 
+test('room and event options are sent in the handshake', async () => {
+  let got;
+  const { wss, port } = await fakeServer((ws, cfg) => { got = cfg; ws.send(JSON.stringify({ message: 'SERVER_READY' })); });
+  const c = client(port, { roomId: 'room-1', eventMode: 'event', confirmEventStart: true });
+  c.connect(); await once(c, 'ready'); c.stop(); wss.close();
+  assert.strictEqual(got.room_id, 'room-1');
+  assert.strictEqual(got.eventMode, 'event');
+  assert.strictEqual(got.confirmEventStart, true);
+});
+
+test('no room options -> no room keys in the handshake', async () => {
+  let got;
+  const { wss, port } = await fakeServer((ws, cfg) => { got = cfg; ws.send(JSON.stringify({ message: 'SERVER_READY' })); });
+  const c = client(port, { roomId: 'room-1' }); c.connect(); await once(c, 'ready'); c.stop(); wss.close();
+  assert.strictEqual(got.room_id, 'room-1');
+  assert.ok(!('eventMode' in got) && !('confirmEventStart' in got));
+});
+
+test('invalid eventMode or eventMode without roomId errors before connecting', async () => {
+  for (const [extra, pattern] of [[{ roomId: 'r', eventMode: 'live' }, /'rehearsal' or 'event'/], [{ eventMode: 'event' }, /requires a roomId/]]) {
+    const c = new MaestraClient({ apiKey: 'k', host: 'localhost', port: 1, secure: false, ...extra });
+    c.connect();
+    assert.match((await once(c, 'error')).message, pattern);
+  }
+});
+
+test('event_access emits event-access before ready', async () => {
+  const { wss, port } = await fakeServer(ws => {
+    ws.send(JSON.stringify({ type: 'event_access', eventMode: 'rehearsal', endsAt: 123, event: { days: 1 } }));
+    ws.send(JSON.stringify({ message: 'SERVER_READY' }));
+  });
+  const c = client(port, { roomId: 'room-1', eventMode: 'rehearsal' });
+  const order = []; c.on('ready', () => order.push('ready'));
+  const access = once(c, 'event-access'); c.on('event-access', () => order.push('event-access'));
+  const ready = once(c, 'ready');
+  c.connect();
+  try {
+    assert.deepStrictEqual(await access, { eventMode: 'rehearsal', endsAt: 123, event: { days: 1 } });
+    await ready;
+    assert.deepStrictEqual(order, ['event-access', 'ready']);
+  } finally {
+    c.stop(); wss.close();
+  }
+});
+
+test('event refusal keeps the server error code', async () => {
+  const { wss, port } = await fakeServer(ws => ws.send(JSON.stringify({ status: 'ERROR', code: 'event_confirmation_required', message: 'Confirm starting your 24-hour event window.' })));
+  const c = client(port, { roomId: 'room-1', eventMode: 'event' }); c.connect();
+  const err = await once(c, 'error'); c.stop(); wss.close();
+  assert.strictEqual(err.code, 'event_confirmation_required');
+  assert.match(err.message, /Confirm starting/);
+});
+
 test('useVad is forwarded, defaults to true', async () => {
   const seen = [];
   const { wss, port } = await fakeServer((ws, cfg) => { seen.push(cfg.use_vad); ws.send(JSON.stringify({ message: 'SERVER_READY' })); });

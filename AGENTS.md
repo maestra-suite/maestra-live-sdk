@@ -58,8 +58,14 @@ The SDK talks only to `../maestra-live-server` (`server.js`, the
 - Handshake: the first text frame is JSON with `authorization: "Bearer <apiKey>"`,
   `uid`, `use_vad`, `clientType: 'sdk'`, `sdkVersion`, and, only when set,
   `sourceLanguage`, `targetLanguage`, `saveToDashboard`, `translationEnabled`,
-  `voiceOverEnabled`, `voiceId`, `autoVoiceCloning`. The server authenticates
+  `voiceOverEnabled`, `voiceId`, `autoVoiceCloning`, `room_id` (from the
+  `roomId` option), `eventMode` and `confirmEventStart`. The server authenticates
   the Bearer value with `apiKeyToUid` (`apiKeys/<key>` in Firebase).
+- With `room_id`, the server hosts that room for the key's owner. Event rooms
+  use the room's languages, not `targetLanguage`; they default to a rehearsal,
+  and `eventMode: 'event'` needs `confirmEventStart: true`. The server sends
+  `{type: "event_access", eventMode, endsAt, event}` before `SERVER_READY`, and
+  refusals as `{status: "ERROR", code, message}`.
 - For API-key sessions that send a `targetLanguage`, the client's language pair
   wins over the user's saved captioner settings; without one, the saved
   `sourceLanguage` and translation settings apply. A boolean `saveToDashboard`

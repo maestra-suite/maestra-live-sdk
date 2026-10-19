@@ -600,6 +600,9 @@ The main client for interacting with the Maestra API.
 *   `autoVoiceCloning` (boolean): Enable automatic voice cloning (default: false)
 *   `useVad` (boolean): Use voice activity detection (default: true)
 *   `connectionTimeout` (number): Milliseconds to wait for the server to become ready (default: 10000)
+*   `roomId` (string): Host a Maestra Live room, e.g. the `roomId` returned by `POST /api/createLiveEvent`. Audience members on the room's join link see the captions; the room's own languages apply
+*   `eventMode` (string): For event rooms, `'rehearsal'` or `'event'` (requires `roomId`). The server treats an event room as a rehearsal unless `'event'` is sent
+*   `confirmEventStart` (boolean): Required with `eventMode: 'event'`. Starting the event begins its paid 24-hour window per purchased day, which can't be undone (default: false)
 
 **Events:**
 
@@ -614,8 +617,26 @@ The main client for interacting with the Maestra API.
 *   `source-ended`: Fired when the audio source (e.g. a file) finishes.
 *   `finalized-segment-audio-url`: Provides the TTS audio URL for a finalized segment (when `voiceId` is set).
 *   `voiceover-play`, `voiceover-ended`, `voiceover-error`, `voiceover-autoplay-blocked`, `voiceover-url`: See [Voiceover Events](#voiceover-events).
-*   `error`: Fired when an error occurs.
+*   `event-access`: Fired before `ready` when an event room is granted, with `{ eventMode, endsAt, event }`.
+*   `error`: Fired when an error occurs. Server refusals carry `error.code`, e.g. `event_confirmation_required`, `event_host_required` or `event_session_ended`.
 *   `disconnect`: Fired when the client disconnects from the server.
+
+### Feeding an event room
+
+Create the event with `POST /api/createLiveEvent`, then host its room with the same API key:
+
+```javascript
+const client = new MaestraClient({
+  apiKey: 'YOUR_API_KEY',
+  roomId: 'ROOM_ID_FROM_CREATE_LIVE_EVENT',
+  eventMode: 'rehearsal' // use 'event' with confirmEventStart: true on the day
+});
+
+client.on('event-access', ({ eventMode, endsAt }) => console.log(`${eventMode} until ${new Date(endsAt)}`));
+client.on('error', (error) => console.error(error.code, error.message));
+client.on('ready', () => client.transcribe(new RtmpsProcessor('rtmp://example.com/live/stream')));
+client.connect();
+```
 
 ### Audio Processors
 

@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+### Added
+- **Event rooms**: New `roomId`, `eventMode` (`'rehearsal'` | `'event'`) and `confirmEventStart` options host a Maestra Live room, such as one created with `POST /api/createLiveEvent`, so its audience sees the captions. The room's languages apply.
+- **`event-access` event**: Emitted when an event room is granted, with `{ eventMode, endsAt, event }`.
+- **Error codes**: Server refusals now set `error.code` (e.g. `event_confirmation_required`).
+
 ## [1.1.0] - 2026-10-02
 ### Added
 - **`source-ended` event**: Emitted when a file/stream source is fully read, with `{ durationSeconds }` of audio produced.
