@@ -1,0 +1,34 @@
+name: Semgrep
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: semgrep-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  semgrep:
+    name: semgrep
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    container:
+      image: semgrep/semgrep:1.136.0
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+      # Report-only: findings introduced by the PR are listed in the job summary and do not fail the check.
+      - name: Scan changes in this pull request
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          semgrep scan --config p/default --baseline-commit "${{ github.event.pull_request.base.sha }}" --text-output semgrep.txt
+          {
+            echo '## Semgrep: findings introduced by this pull request'
+            echo '```'
+            cat semgrep.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
