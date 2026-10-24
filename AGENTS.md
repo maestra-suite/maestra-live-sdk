@@ -102,7 +102,8 @@ The SDK talks only to `../maestra-live-server` (`server.js`, the
 
 - Releases are manual: bump `version` in `package.json` (and the lockfile),
   add the `CHANGELOG.md` entry, then the owner runs `npm run release`. There is
-  no CI or publish workflow. Agents describe or prepare a release; they never
+  no publish workflow; `ci.yml` only runs `npm test` on pull requests. Agents
+  describe or prepare a release; they never
   publish, tag or bump the version unless asked.
 - `docs/` is generated output; regenerate it rather than editing the HTML.
 

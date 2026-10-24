@@ -316,14 +316,15 @@ test('FileProcessor reports audio duration on end', async () => {
 });
 
 test('FfmpegProcessor stopped right after start leaves no FFmpeg running', async () => {
-  const { execSync } = require('child_process');
+  const { execFileSync } = require('child_process');
   const { FfmpegProcessor } = require('..');
   class RealtimeProcessor extends FfmpegProcessor {
     _getInputOptions() { return ['-re']; }
   }
   const file = silentWav(3, 'stop');
+  // No shell: on Linux, pgrep -f would match the `sh -c` wrapper's own command line
   const running = () => {
-    try { return execSync(`pgrep -f ${file}`).toString().trim().length > 0; } catch { return false; }
+    try { return execFileSync('pgrep', ['-f', file]).toString().trim().length > 0; } catch { return false; }
   };
   try {
     let chunksAfterStop = 0, stopped = false;
